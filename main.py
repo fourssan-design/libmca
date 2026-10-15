@@ -19,10 +19,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# جدول الكتب في قاعدة البيانات
+# جدول الكتب في قاعدة البيانات (تم إضافة book_number)
 class Book(Base):
   __tablename__ = "books"
   id = Column(Integer, primary_key=True, index=True)
+  book_number = Column(String, index=True, nullable=True)  # رقم الكتاب التسلسلي
   title = Column(String, index=True)
   author = Column(String, index=True)
   category = Column(String, index=True)
@@ -61,13 +62,13 @@ class ReservationCreate(BaseModel):
 # الصفحة الرئيسية لتصفح الكتب
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
-  books = db.query(Book).limit(50).all()  # عرض أول 50 كتاب كبداية
+  books = db.query(Book).limit(50).all()
   return templates.TemplateResponse(
       request, "index.html", {"books": books}
   )
 
 
-# API للبحث عن الكتب
+# API للبحث عن الكتب (يشمل البحث برقم الكتاب أيضاً)
 @app.get("/api/books")
 def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   if query:
@@ -77,6 +78,7 @@ def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
             Book.title.contains(query)
             | Book.author.contains(query)
             | Book.category.contains(query)
+            | Book.book_number.contains(query)
         )
         .all()
     )
@@ -107,7 +109,7 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   }
 
 
-# API استيراد الكتب تلقائياً من ملفات Excel بناءً على هيكل ملفاتكم
+# API استيراد الكتب واستخراج رقم الكتاب من العمود الأول
 @app.post("/api/upload-excel")
 def upload_excel(
     category_name: str = "تاريخ",
@@ -116,17 +118,16 @@ def upload_excel(
 ):
   try:
     contents = file.file.read()
-    # قراءة الملف متجاهلين أول سطرين (الترويسة) بناءً على تصميم ملفاتكم
     df = pd.read_excel(io.BytesIO(contents), header=None)
 
     added_count = 0
-    # نبدأ من الصف رقم 2 (الذي يحتوي على البيانات الفعلية)
     for index, row in df.iloc[2:].iterrows():
+      # استخراج رقم الكتاب من العمود الأول (الرقم)
+      b_num = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
       title = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
       author = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "غير معروف"
       note = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
 
-      # محاولة استخراج عدد النسخ إذا وجد في العمود السادس أو الملاحظات
       copies = 1
       try:
         val = row.iloc[6]
@@ -138,6 +139,7 @@ def upload_excel(
       if title and title != "nan":
         full_title = f"{title} ({note})" if note and note != "nan" else title
         book = Book(
+            book_number=b_num if b_num != "nan" else "",
             title=full_title,
             author=author,
             category=category_name,
