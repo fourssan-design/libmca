@@ -1,4 +1,5 @@
 import io
+import logging
 import os
 from datetime import date
 from typing import Optional
@@ -11,14 +12,18 @@ from sqlalchemy import Column, Date, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
+# تفعيل سجلات التصحيح لرؤية تفاصيل الاتصال بقاعدة البيانات بدقة في سجلات Render
+logging.basicConfig()
+logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
 # 1. إعداد التطبيق
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
 
-# 2. إعداد قاعدة البيانات السحابية (Supabase / PostgreSQL)
+# 2. إعداد قاعدة البيانات السحابية (Supabase / PostgreSQL) مع دعم أمان الاتصال
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://postgres:U6TL#wPafq5iL+F@db.myzqwpwypvnqpwbrfmhr.supabase.co:5432/postgres?sslmode=require"
+    "postgresql+psycopg2://postgres:U6TL#wPafq5iL+F@db.myzqwpwypvnqpwbrfmhr.supabase.co:5432/postgres?sslmode=require",
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
