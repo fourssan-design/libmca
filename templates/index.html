@@ -1,11 +1,12 @@
+HTML
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>مكتبة دار الثقافة - حجز الكتب</title>
+    <title>مكتبة دار الثقافة بأدرار - حجز الكتب</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; text-align: center; }
         .search-box { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -13,6 +14,7 @@
         th { background-color: #007bff; color: white; }
         button { background-color: #28a745; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; }
         button:hover { background-color: #218838; }
+        .admin-section { margin-top: 30px; padding: 15px; background: #e9ecef; border-radius: 6px; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 300px; }
         .modal-content input { width: 100%; padding: 8px; margin: 10px 0; box-sizing: border-box; }
@@ -21,7 +23,7 @@
 <body>
 
 <div class="container">
-    <h1>مكتبة دار الثقافة - تصفح وحجز الكتب</h1>
+    <h1>مكتبة دار الثقافة بأدرار - تصفح وحجز الكتب</h1>
     <input type="text" id="searchInput" class="search-box" placeholder="ابحث بالعنوان، المؤلف، أو التصنيف..." onkeyup="searchBooks()">
     
     <table id="booksTable">
@@ -34,7 +36,6 @@
             </tr>
         </thead>
         <tbody id="booksBody">
-            <!-- سيتم تعبئتها ديناميكياً -->
             {% for book in books %}
             <tr>
                 <td>{{ book.title }}</td>
@@ -45,9 +46,17 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- قسم رفع ملفات إكسل للإدارة -->
+    <div class="admin-section">
+        <h3>لوحة أمين المكتبة: استيراد الكتب من ملفات Excel</h3>
+        <input type="text" id="catName" placeholder="اسم التصنيف (مثال: تاريخ الجزائر)" value="تاريخ">
+        <input type="file" id="excelFile" accept=".xls, .xlsx">
+        <button style="background-color: #007bff; margin-top: 10px;" onclick="uploadExcel()">رفع وإدخال الكتب تلقائياً</button>
+    </div>
 </div>
 
-<!-- نافذة منبثقة للحجز -->
+<!-- نافذة حجز الكتاب -->
 <div id="reserveModal" class="modal">
     <div class="modal-content">
         <h3 id="modalBookTitle">حجز الكتاب</h3>
@@ -95,7 +104,7 @@
         let resDate = document.getElementById('resDate').value;
 
         if(!userName || !resDate) {
-            alert('الرجاء إدخال الاسم التاريخ المطلوب');
+            alert('الرجاء إدخال الاسم والتاريخ المطلوب');
             return;
         }
 
@@ -113,8 +122,35 @@
         if(response.ok) {
             alert(result.message + '\nتاريخ الحجز: ' + result.date);
             closeModal();
+            searchBooks();
         } else {
             alert('حدث خطأ: ' + result.detail);
+        }
+    }
+
+    async function uploadExcel() {
+        let fileInput = document.getElementById('excelFile');
+        let catName = document.getElementById('catName').value;
+
+        if(fileInput.files.length === 0) {
+            alert('الرجاء اختيار ملف Excel أولاً');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        let response = await fetch(`/api/upload-excel?category_name=${encodeURIComponent(catName)}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        let result = await response.json();
+        if(response.ok && !result.error) {
+            alert(result.message);
+            searchBooks();
+        } else {
+            alert('حدث خطأ أثناء الرفع: ' + (result.error || 'خطأ غير معروف'));
         }
     }
 </script>
