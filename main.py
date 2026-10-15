@@ -15,16 +15,18 @@ from sqlalchemy.orm import Session, sessionmaker
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
 
-# 2. إعداد قاعدة البيانات المحلية (SQLite)
-SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+# 2. إعداد قاعدة البيانات السحابية (Supabase / PostgreSQL)
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:U6TL#wPafq5iL+F@db.myzqwpwypvnqpwbrfmhr.supabase.co:5432/postgres",
 )
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# جدول الكتب في قاعدة البيانات
+# جدول الكتب في قاعدة البيانات السحابية
 class Book(Base):
   __tablename__ = "books"
   id = Column(Integer, primary_key=True, index=True)
@@ -35,7 +37,7 @@ class Book(Base):
   total_copies = Column(Integer, default=1)
 
 
-# جدول الحجوزات
+# جدول الحجوزات السحابي
 class Reservation(Base):
   __tablename__ = "reservations"
   id = Column(Integer, primary_key=True, index=True)
@@ -44,7 +46,7 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
-# إنشاء الجداول
+# إنشاء الجداول في السحاب تلقائياً
 Base.metadata.create_all(bind=engine)
 
 
@@ -101,17 +103,6 @@ def get_database_stats(db: Session = Depends(get_db)):
   }
 
 
-# API لتنزيل ملف قاعدة البيانات
-@app.api_route("/api/download-db", methods=["GET", "HEAD"])
-def download_database():
-  db_path = "library.db"
-  if os.path.exists(db_path):
-    return FileResponse(
-        db_path, media_type="application/octet-stream", filename="library.db"
-    )
-  return {"error": "ملف قاعدة البيانات غير موجود بعد."}
-
-
 # API لتسجيل حجز جديد
 @app.post("/api/reserve")
 def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
@@ -134,6 +125,23 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   }
 
 
+# API لعرض الحجوزات
+@app.get("/api/reservations")
+def get_reservations(db: Session = Depends(get_db)):
+  results = []
+  reservations = db.query(Reservation).all()
+  for r in reservations:
+    book = db.query(Book).filter(Book.id == r.book_id).first()
+    results.append({
+        "reservation_id": r.id,
+        "user_name": r.user_name,
+        "reservation_date": str(r.reservation_date),
+        "book_title": book.title if book else "كتاب غير معروف",
+        "book_number": book.book_number if book else "",
+    })
+  return results
+
+
 # API استيراد الكتب من ملفات Excel مع حماية بكلمة السر
 @app.post("/api/upload-excel")
 def upload_excel(
@@ -142,7 +150,6 @@ def upload_excel(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-  # التحقق من كلمة سر أمين المكتبة
   if admin_password != "admin123":
     raise HTTPException(
         status_code=403, detail="كلمة سر أمين المكتبة غير صحيحة!"
