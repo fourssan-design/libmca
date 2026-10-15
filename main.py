@@ -19,11 +19,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# جدول الكتب في قاعدة البيانات (تم إضافة book_number)
+# جدول الكتب في قاعدة البيانات
 class Book(Base):
   __tablename__ = "books"
   id = Column(Integer, primary_key=True, index=True)
-  book_number = Column(String, index=True, nullable=True)  # رقم الكتاب التسلسلي
+  book_number = Column(String, index=True, nullable=True)
   title = Column(String, index=True)
   author = Column(String, index=True)
   category = Column(String, index=True)
@@ -63,12 +63,10 @@ class ReservationCreate(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
   books = db.query(Book).limit(50).all()
-  return templates.TemplateResponse(
-      request, "index.html", {"books": books}
-  )
+  return templates.TemplateResponse(request, "index.html", {"books": books})
 
 
-# API للبحث عن الكتب (يشمل البحث برقم الكتاب أيضاً)
+# API للبحث عن الكتب
 @app.get("/api/books")
 def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   if query:
@@ -121,27 +119,22 @@ def upload_excel(
     df = pd.read_excel(io.BytesIO(contents), header=None)
 
     added_count = 0
-    # نبدأ من الصف رقم 2 حيث تبدأ البيانات الفعلية
     for index, row in df.iloc[2:].iterrows():
-      # استخراج رقم الكتاب (الرقم التسلسلي) من العمود الأول
       b_num = (
           str(row.iloc[0]).strip()
           if pd.notna(row.iloc[0]) and str(row.iloc[0]) != "nan"
           else ""
       )
-      # استخراج العنوان من العمود الثاني
       title = (
           str(row.iloc[1]).strip()
           if pd.notna(row.iloc[1]) and str(row.iloc[1]) != "nan"
           else ""
       )
-      # استخراج المؤلف من العمود الثالث
       author = (
           str(row.iloc[2]).strip()
           if pd.notna(row.iloc[2]) and str(row.iloc[2]) != "nan"
           else "غير معروف"
       )
-      # استخراج الملاحظة (مثل الأجزاء) من العمود الرابع
       note = (
           str(row.iloc[3]).strip()
           if pd.notna(row.iloc[3]) and str(row.iloc[3]) != "nan"
@@ -165,9 +158,6 @@ def upload_excel(
         "message": (
             f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
         )
-    }
-  except Exception as e:
-    return {"error": str(e)}
     }
   except Exception as e:
     return {"error": str(e)}
