@@ -20,11 +20,8 @@ logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
 
-# 2. إعداد قاعدة البيانات السحابية (Supabase / PostgreSQL) مع دعم أمان الاتصال
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:U6TL#wPafq5iL+F@db.myzqwpwypvnqpwbrfmhr.supabase.co:5432/postgres?sslmode=require",
-)
+# 2. إعداد قاعدة البيانات المحلية SQLite (من ملف library.db المرفوع على المستودع)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
