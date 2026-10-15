@@ -7,11 +7,16 @@
         body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; direction: rtl; }
         .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* ترويسة الصفحة والشعارات */
+        /* ترويسة الصفحة والشعارات مع تحجيم دقيق للصور لمنع ضخامتها */
         .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 25px; }
-        .header-section img { height: 75px; object-fit: contain; }
+        .header-section img { 
+            height: 60px;       /* ارتفاع ثابت ومناسب للترويسة */
+            width: auto;        /* الحفاظ على تناسق الأبعاد الأصلية */
+            max-width: 120px;   /* منع تمدد الصورة بشكل مبالغ فيه */
+            object-fit: contain; 
+        }
         .header-title { text-align: center; flex: 1; }
-        .header-title h1 { color: #2c3e50; margin: 0; font-size: 24px; }
+        .header-title h1 { color: #2c3e50; margin: 0; font-size: 22px; }
 
         .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
         .search-box { flex: 1; padding: 14px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
