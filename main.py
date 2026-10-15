@@ -1,8 +1,9 @@
 import io
+import os
 from datetime import date
 from typing import Optional
 from fastapi import FastAPI, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 import pandas as pd
 from pydantic import BaseModel
@@ -10,42 +11,17 @@ from sqlalchemy import Column, Date, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-# إعداد قاعدة البيانات المحلية (SQLite)
+# 1. إعداد التطبيق أولاً لتجنب أي أخطاء في الترتيب
+app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
+templates = Jinja2Templates(directory="templates")
+
+# 2. إعداد قاعدة البيانات المحلية (SQLite)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-
-import os
-from fastapi.responses import FileResponse
-
-
-# 1. مسار لإعطاء إحصائيات سريعة عن قاعدة البيانات
-@app.get("/api/stats")
-def get_database_stats(db: Session = Depends(get_db)):
-  total_books = db.query(Book).count()
-  categories = db.query(Book.category).distinct().all()
-  cat_list = [c[0] for c in categories if c[0]]
-
-  return {
-      "total_books": total_books,
-      "categories_count": len(cat_list),
-      "categories": cat_list,
-  }
-
-
-# 2. مسار لتنزيل ملف قاعدة البيانات الاحتياطي محلياً
-@app.api_route("/api/download-db", methods=["GET", "HEAD"])
-def download_database():
-  db_path = "library.db"
-  if os.path.exists(db_path):
-    return FileResponse(
-        db_path, media_type="application/octet-stream", filename="library.db"
-    )
-  return {"error": "ملف قاعدة البيانات غير موجود بعد."}
 
 
 # جدول الكتب في قاعدة البيانات
@@ -68,12 +44,8 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
-# إعادة إنشاء الجدول نظيفاً لتجنب أي تعارض في الأعمدة
-Base.metadata.drop_all(bind=engine)
+# إنشاء الجداول (بدون حذف لمنع ضياع البيانات)
 Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
-templates = Jinja2Templates(directory="templates")
 
 
 def get_db():
@@ -116,6 +88,30 @@ def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   return books
 
 
+# API لإحصائيات قاعدة البيانات
+@app.get("/api/stats")
+def get_database_stats(db: Session = Depends(get_db)):
+  total_books = db.query(Book).count()
+  categories = db.query(Book.category).distinct().all()
+  cat_list = [c[0] for c in categories if c[0]]
+  return {
+      "total_books": total_books,
+      "categories_count": len(cat_list),
+      "categories": cat_list,
+  }
+
+
+# API لتنزيل ملف قاعدة البيانات
+@app.api_route("/api/download-db", methods=["GET", "HEAD"])
+def download_database():
+  db_path = "library.db"
+  if os.path.exists(db_path):
+    return FileResponse(
+        db_path, media_type="application/octet-stream", filename="library.db"
+    )
+  return {"error": "ملف قاعدة البيانات غير موجود بعد."}
+
+
 # API لتسجيل حجز جديد
 @app.post("/api/reserve")
 def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
@@ -138,7 +134,7 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   }
 
 
-# API استيراد الكتب وتصحيح قراءة الأعمدة بدقة
+# API استيراد الكتب من ملفات Excel
 @app.post("/api/upload-excel")
 def upload_excel(
     category_name: str = "تاريخ",
@@ -187,6 +183,11 @@ def upload_excel(
     db.commit()
     return {
         "message": (
+            f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
+        )
+    }
+  except Exception as e:
+    return {"error": str(e)}
             f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
         )
     }
