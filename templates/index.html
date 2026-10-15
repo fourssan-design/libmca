@@ -7,12 +7,12 @@
         body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; direction: rtl; }
         .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* ترويسة الصفحة والشعارات مع تحجيم دقيق للصور لمنع ضخامتها */
+        /* ترويسة الصفحة والشعارات */
         .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 25px; }
         .header-section img { 
-            height: 60px;       /* ارتفاع ثابت ومناسب للترويسة */
-            width: auto;        /* الحفاظ على تناسق الأبعاد الأصلية */
-            max-width: 120px;   /* منع تمدد الصورة بشكل مبالغ فيه */
+            height: 60px;       
+            width: auto;        
+            max-width: 120px;   
             object-fit: contain; 
         }
         .header-title { text-align: center; flex: 1; }
@@ -28,21 +28,21 @@
         th { background-color: #f1f5f9; color: #334155; font-weight: bold; }
         .book-title { font-weight: bold; color: #1d4ed8; font-size: 16px; }
         .book-num { color: #64748b; font-size: 14px; text-align: center; }
+        
+        /* زر الحجز في الجدول */
+        .reserve-btn { background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .reserve-btn:hover { background-color: #059669; }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- ترويسة تضم الشعارات وعنوان الموقع -->
         <div class="header-section">
-        <!-- الشعار البرتقالي (على اليسار) -->
-        <img src="/static/ministre.png" alt="شعار الوزارة">
-            
+            <img src="/static/ministre.png" alt="شعار الوزارة" onerror="this.style.display='none'">
             <div class="header-title">
                 <h1>📖 فهارس مكتبة دار الثقافة أدرار</h1>
             </div>
-            
-            <!-- الشعار الأخضر (على اليمين) -->
-            <img src="/static/mca.png" alt="شعار دار الثقافة">
+            <img src="/static/mca.png" alt="شعار دار الثقافة" onerror="this.style.display='none'">
         </div>
         
         <!-- حقل البحث مع زر البحث -->
@@ -55,10 +55,11 @@
         <table id="booksTable">
             <thead>
                 <tr>
-                    <th style="width: 15%;">رقم الكتاب</th>
-                    <th style="width: 45%;">عنوان الكتاب</th>
-                    <th style="width: 25%;">المؤلف</th>
+                    <th style="width: 12%;">رقم الكتاب</th>
+                    <th style="width: 40%;">عنوان الكتاب</th>
+                    <th style="width: 23%;">المؤلف</th>
                     <th style="width: 15%;">التصنيف</th>
+                    <th style="width: 10%; text-align: center;">الحجز</th>
                 </tr>
             </thead>
             <tbody id="booksBody">
@@ -68,6 +69,9 @@
                     <td><span class="book-title">{{ book.title }}</span></td>
                     <td>{{ book.author }}</td>
                     <td>{{ book.category }}</td>
+                    <td style="text-align: center;">
+                        <button class="reserve-btn" onclick="alert('عذراً، خدمة الحجز غير متوفرة حالياً.')">حجز</button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -83,7 +87,7 @@
                     let tbody = document.getElementById('booksBody');
                     tbody.innerHTML = '';
                     if(data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">لم يتم العثور على نتائج مطابقة</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">لم يتم العثور على نتائج مطابقة</td></tr>';
                         return;
                     }
                     data.forEach(book => {
@@ -93,6 +97,9 @@
                             <td><span class="book-title">${book.title}</span></td>
                             <td>${book.author}</td>
                             <td>${book.category}</td>
+                            <td style="text-align: center;">
+                                <button class="reserve-btn" onclick="alert('عذراً، خدمة الحجز غير متوفرة حالياً.')">حجز</button>
+                            </td>
                         `;
                         tbody.appendChild(tr);
                     });
