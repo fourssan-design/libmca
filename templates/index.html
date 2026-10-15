@@ -5,18 +5,18 @@
     <title>فهارس مكتبة دار الثقافة</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; direction: rtl; }
-        .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         /* ترويسة الصفحة والشعارات */
         .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 25px; }
-        .header-section img { 
-            height: 60px;       
-            width: auto;        
-            max-width: 120px;   
-            object-fit: contain; 
-        }
+        .header-section img { height: 60px; width: auto; max-width: 120px; object-fit: contain; }
         .header-title { text-align: center; flex: 1; }
         .header-title h1 { color: #2c3e50; margin: 0; font-size: 22px; }
+
+        /* شريط التصنيفات التفاعلي */
+        .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; white-space: nowrap; scrollbar-width: thin; }
+        .category-chip { background-color: #e2e8f0; color: #334155; padding: 8px 14px; border-radius: 20px; font-size: 14px; cursor: pointer; border: none; transition: background 0.2s; }
+        .category-chip:hover, .category-chip.active { background-color: #2563eb; color: white; }
 
         .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
         .search-box { flex: 1; padding: 14px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
@@ -28,8 +28,6 @@
         th { background-color: #f1f5f9; color: #334155; font-weight: bold; }
         .book-title { font-weight: bold; color: #1d4ed8; font-size: 16px; }
         .book-num { color: #64748b; font-size: 14px; text-align: center; }
-        
-        /* زر الحجز في الجدول */
         .reserve-btn { background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
         .reserve-btn:hover { background-color: #059669; }
     </style>
@@ -45,6 +43,12 @@
             <img src="/static/mca.png" alt="شعار دار الثقافة" onerror="this.style.display='none'">
         </div>
         
+        <!-- شريط التصنيفات -->
+        <div class="categories-bar" id="categoriesBar">
+            <button class="category-chip active" onclick="loadAllBooks(this)">الكل</button>
+            <!-- سيتم تعبئة التصنيفات تلقائياً هنا -->
+        </div>
+
         <!-- حقل البحث مع زر البحث -->
         <div class="search-container">
             <input type="text" id="searchInput" class="search-box" placeholder="ابحث عن عنوان كتاب، مؤلف، أو تصنيف..." onkeydown="checkEnter(event)">
@@ -70,7 +74,7 @@
                     <td>{{ book.author }}</td>
                     <td>{{ book.category }}</td>
                     <td style="text-align: center;">
-                        <button class="reserve-btn" onclick="alert('عذراً، خدمة الحجز عن بعد غير متوفرة حالياً.')">حجز</button>
+                        <button class="reserve-btn" onclick="alert('عذراً، خدمة الحجز غير متوفرة حالياً.')">حجز</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -79,31 +83,75 @@
     </div>
 
     <script>
-        function searchBooks() {
-            let query = document.getElementById('searchInput').value;
-            fetch(`/api/books?query=${encodeURIComponent(query)}`)
+        // جلب التصنيفات وضخها في الشريط عند فتح الصفحة
+        window.onload = function() {
+            fetch('/api/stats')
                 .then(response => response.json())
                 .then(data => {
-                    let tbody = document.getElementById('booksBody');
-                    tbody.innerHTML = '';
-                    if(data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">لم يتم العثور على نتائج مطابقة</td></tr>';
-                        return;
-                    }
-                    data.forEach(book => {
-                        let tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="book-num">${book.book_number || ''}</td>
-                            <td><span class="book-title">${book.title}</span></td>
-                            <td>${book.author}</td>
-                            <td>${book.category}</td>
-                            <td style="text-align: center;">
-                                <button class="reserve-btn" onclick="alert(' عذراً، خدمة الحجز غير متوفرة حالياً يمكنك الحضور إلى مكتبة دار الثقافة للاستفادة من الكتاب .')">حجز</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
+                    let bar = document.getElementById('categoriesBar');
+                    data.categories.forEach(cat => {
+                        let btn = document.createElement('button');
+                        btn.className = 'category-chip';
+                        btn.innerText = cat;
+                        btn.onclick = function() { filterByCategory(cat, btn); };
+                        bar.appendChild(btn);
                     });
                 });
+        };
+
+        function renderBooks(data) {
+            let tbody = document.getElementById('booksBody');
+            tbody.innerHTML = '';
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">لم يتم العثور على نتائج مطابقة</td></tr>';
+                return;
+            }
+            data.forEach(book => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="book-num">${book.book_number || ''}</td>
+                    <td><span class="book-title">${book.title}</span></td>
+                    <td>${book.author}</td>
+                    <td>${book.category}</td>
+                    <td style="text-align: center;">
+                        <button class="reserve-btn" onclick="alert('عذراً، خدمة الحجز غير متوفرة حالياً.')">حجز</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function searchBooks() {
+            let query = document.getElementById('searchInput').value;
+            // إزالة التحديد عن التصنيفات عند البحث الحر
+            document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
+            
+            fetch(`/api/books?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => renderBooks(data));
+        }
+
+        function filterByCategory(categoryName, element) {
+            // تحديث الزر النشط
+            document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            
+            // تفريغ حقل البحث
+            document.getElementById('searchInput').value = '';
+
+            fetch(`/api/books/category/${encodeURIComponent(categoryName)}`)
+                .then(response => response.json())
+                .then(data => renderBooks(data));
+        }
+
+        function loadAllBooks(element) {
+            document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('searchInput').value = '';
+
+            fetch(`/api/books`)
+                .then(response => response.json())
+                .then(data => renderBooks(data));
         }
 
         function checkEnter(event) {
