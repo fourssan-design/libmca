@@ -14,6 +14,10 @@ from sqlalchemy.orm import Session, sessionmaker
 # 1. إعداد التطبيق
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
+from fastapi.staticfiles import StaticFiles
+
+# السماح للخادم بقراءة الملفات الثابتة (مثل الصور) من المجلد الرئيسي
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 # 2. إعداد قاعدة البيانات المحلية SQLite (من ملف library.db المرفوع على المستودع)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
