@@ -51,7 +51,7 @@
         .btn-submit { background-color: #2563eb; color: white; }
         .btn-cancel { background-color: #e2e8f0; color: #334155; }
 
-        /* تصميم استجابة إضافي للشاشات الصغيرة جداً (الهواتف) */
+        /* تصميم استجابة للشاشات الصغيرة */
         @media (max-width: 600px) {
             body { padding: 5px; }
             .container { padding: 10px; }
@@ -231,7 +231,6 @@
             });
         }
 
-        .searchBooks() // (ملاحظة: الدالة السليمة بالأسفل)
         function searchBooks() {
             let query = document.getElementById('searchInput').value;
             document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
