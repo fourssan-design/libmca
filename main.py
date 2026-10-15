@@ -3,7 +3,8 @@ import os
 from datetime import date
 from typing import Optional
 from fastapi import FastAPI, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
 from pydantic import BaseModel
@@ -13,13 +14,13 @@ from sqlalchemy.orm import Session, sessionmaker
 
 # 1. إعداد التطبيق
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
-templates = Jinja2Templates(directory="templates")
-from fastapi.staticfiles import StaticFiles
 
-# السماح للخادم بقراءة الملفات الثابتة (مثل الصور) من المجلد الرئيسي
+# ربط المجلد الحالي لخدمة الملفات الثابتة (الصور)
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-# 2. إعداد قاعدة البيانات المحلية SQLite (من ملف library.db المرفوع على المستودع)
+templates = Jinja2Templates(directory="templates")
+
+# 2. إعداد قاعدة البيانات المحلية SQLite
 SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
 
 engine = create_engine(
@@ -29,7 +30,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# جدول الكتب في قاعدة البيانات
 class Book(Base):
   __tablename__ = "books"
   id = Column(Integer, primary_key=True, index=True)
@@ -39,13 +39,7 @@ class Book(Base):
   category = Column(String, index=True)
   total_copies = Column(Integer, default=1)
 
-# API لجلب الكتب حسب التصنيف المحدد
-@app.get("/api/books/category/{category_name}")
-def get_books_by_category(category_name: str, db: Session = Depends(get_db)):
-  books = db.query(Book).filter(Book.category == category_name).all()
-  return books
-    
-# جدول الحجوزات
+
 class Reservation(Base):
   __tablename__ = "reservations"
   id = Column(Integer, primary_key=True, index=True)
@@ -54,7 +48,6 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
-# إنشاء الجداول تلقائياً إن لم تكن موجودة
 Base.metadata.create_all(bind=engine)
 
 
@@ -72,14 +65,14 @@ class ReservationCreate(BaseModel):
   reservation_date: date
 
 
-# الصفحة الرئيسية للزوار (تصفح وبحث وحجز الكتب فقط)
+# الصفحة الرئيسية للزوار
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
   books = db.query(Book).limit(50).all()
   return templates.TemplateResponse(request, "index.html", {"books": books})
 
 
-# صفحة لوحة تحكم أمين المكتبة المستقلة (المحمية)
+# صفحة لوحة تحكم أمين المكتبة
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
   reservations = db.query(Reservation).all()
@@ -107,7 +100,14 @@ def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   return books
 
 
-# API لإحصائيات قاعدة البيانات
+# API لجلب الكتب حسب التصنيف المحدد
+@app.get("/api/books/category/{category_name}")
+def get_books_by_category(category_name: str, db: Session = Depends(get_db)):
+  books = db.query(Book).filter(Book.category == category_name).all()
+  return books
+
+
+# API لإحصائيات قاعدة البيانات والتصنيفات
 @app.get("/api/stats")
 def get_database_stats(db: Session = Depends(get_db)):
   total_books = db.query(Book).count()
