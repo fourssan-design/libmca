@@ -13,13 +13,23 @@
         .back-link { background-color: #2563eb; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: bold; }
         .back-link:hover { background-color: #1d4ed8; }
 
-        /* بطاقات الإحصائيات التحليلية السريعة */
+        /* بطاقات الإحصائيات التحليلية */
         .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; border-right: 4px solid #2563eb; }
         .stat-card.green { border-right-color: #10b981; }
         .stat-card.purple { border-right-color: #8b5cf6; }
         .stat-card-num { font-size: 22px; font-weight: bold; color: #1e293b; margin-top: 5px; }
         .stat-card-label { font-size: 13px; color: #64748b; }
+
+        /* قسم رفع ملفات الـ Excel */
+        .upload-section { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .upload-section h3 { margin-top: 0; color: #1e293b; font-size: 16px; border-right: 4px solid #10b981; padding-right: 8px; }
+        .upload-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 13px; font-weight: bold; color: #334155; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; background: white; }
+        .upload-btn { background-color: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; height: 41px; }
+        .upload-btn:hover { background-color: #059669; }
 
         h2 { color: #1e293b; font-size: 18px; margin-top: 0; border-right: 4px solid #2563eb; padding-right: 10px; }
 
@@ -45,7 +55,7 @@
         <!-- ترويسة لوحة التحكم -->
         <div class="header-section">
             <div class="header-title">
-                <h1>🛠️ لوحة تحكم أمين المكتبة - الإحصائيات وإدارة الحجوزات</h1>
+                <h1>🛠️ لوحة تحكم أمين المكتبة - إدارة الفهارس والحجوزات</h1>
             </div>
             <a href="/" class="back-link">الذهاب للفهارس الرئيسية</a>
         </div>
@@ -63,6 +73,26 @@
             <div class="stat-card purple">
                 <div class="stat-card-label">التصنيفات المعرفية</div>
                 <div class="stat-card-num">54</div>
+            </div>
+        </div>
+
+        <!-- أداة رفع ملفات Excel مباشرة -->
+        <div class="upload-section">
+            <h3>📥 استيراد وتحديث الكتب عبر ملف Excel</h3>
+            <div class="upload-form">
+                <div class="form-group">
+                    <label>اختر ملف Excel (.xlsx):</label>
+                    <input type="file" id="excelFile" accept=".xlsx, .xls">
+                </div>
+                <div class="form-group">
+                    <label>اسم التصنيف المعرفي:</label>
+                    <input type="text" id="categoryName" placeholder="مثال: تاريخ، أدب، علوم...">
+                </div>
+                <div class="form-group">
+                    <label>كلمة سر أمين المكتبة:</label>
+                    <input type="password" id="adminPassword" placeholder="أدخل كلمة السر">
+                </div>
+                <button class="upload-btn" onclick="uploadExcelFile()">رفع وإضافة الكتب</button>
             </div>
         </div>
 
@@ -112,5 +142,56 @@
             </table>
         </div>
     </div>
+
+    <script>
+        function uploadExcelFile() {
+            let fileInput = document.getElementById('excelFile');
+            let categoryInput = document.getElementById('categoryName').value.trim();
+            let passwordInput = document.getElementById('adminPassword').value;
+
+            if (fileInput.files.length === 0) {
+                alert('الرجاء اختيار ملف Excel أولاً!');
+                return;
+            }
+            if (!categoryInput) {
+                alert('الرجاء إدخال اسم التصنيف المعرفي!');
+                return;
+            }
+            if (!passwordInput) {
+                alert('الرجاء إدخال كلمة سر أمين المكتبة!');
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            let url = `/api/upload-excel?category_name=${encodeURIComponent(categoryInput)}&admin_password=${encodeURIComponent(passwordInput)}`;
+
+            let btn = document.querySelector('.upload-btn');
+            btn.innerText = 'جاري الرفع...';
+            btn.disabled = true;
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.innerText = 'رفع وإضافة الكتب';
+                btn.disabled = false;
+                if (data.message) {
+                    alert(data.message);
+                    location.reload(); // تحديث الصفحة لرؤية العدد الجديد للكتب
+                } else {
+                    alert(data.error || 'حدث خطأ أثناء رفع الملف.');
+                }
+            })
+            .catch(err => {
+                btn.innerText = 'رفع وإضافة الكتب';
+                btn.disabled = false;
+                alert('حدث خطأ في الاتصال بالخادم.');
+            });
+        }
+    </script>
 </body>
 </html>
