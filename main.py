@@ -18,7 +18,7 @@ templates = Jinja2Templates(directory="templates")
 # 2. إعداد قاعدة البيانات السحابية (Supabase / PostgreSQL)
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:U6TL#wPafq5iL+F@db.myzqwpwypvnqpwbrfmhr.supabase.co:5432/postgres",
+    "postgresql+psycopg2://postgres:U6TL#wPafq5iL+F@db.myzqwpwypvnqpwbrfmhr.supabase.co:5432/postgres",
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
