@@ -2,15 +2,22 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>فهارس مكتبة دار الثقافة أدرار الجزائر</title>
+    <title>فهارس مكتبة دار الثقافة</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; direction: rtl; }
         .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; margin-bottom: 25px; font-size: 26px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        
+        /* ترويسة الصفحة والشعارات */
+        .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 25px; }
+        .header-section img { height: 75px; object-fit: contain; }
+        .header-title { text-align: center; flex: 1; }
+        .header-title h1 { color: #2c3e50; margin: 0; font-size: 24px; }
+
         .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
         .search-box { flex: 1; padding: 14px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
         .search-btn { padding: 0 20px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
         .search-btn:hover { background-color: #1d4ed8; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
         th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: right; }
         th { background-color: #f1f5f9; color: #334155; font-weight: bold; }
@@ -20,7 +27,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>📖 فهارس مكتبة دار الثقافة أدرار </h1>
+        <!-- ترويسة تضم الشعارات وعنوان الموقع -->
+        <div class="header-section">
+            <!-- الشعار البرتقالي (على اليسار) -->
+            <img src="ministre.jpg" alt="شعار الوزارة" onerror="this.style.display='none'">
+            
+            <div class="header-title">
+                <h1>📖 فهارس مكتبة دار الثقافة أدرار</h1>
+            </div>
+            
+            <!-- الشعار الأخضر (على اليمين) -->
+            <img src="mca.jpg" alt="شعار دار الثقافة" onerror="this.style.display='none'">
+        </div>
         
         <!-- حقل البحث مع زر البحث -->
         <div class="search-container">
@@ -76,7 +94,6 @@
                 });
         }
 
-        // البحث عند الضغط على زر Enter في لوحة المفاتيح
         function checkEnter(event) {
             if (event.key === 'Enter') {
                 searchBooks();
