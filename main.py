@@ -39,6 +39,8 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
+# إعادة إنشاء الجدول نظيفاً لتجنب أي تعارض في الأعمدة
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
