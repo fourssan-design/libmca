@@ -8,10 +8,16 @@
         .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         /* ترويسة الصفحة والشعارات */
-        .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 25px; }
+        .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 20px; }
         .header-section img { height: 60px; width: auto; max-width: 120px; object-fit: contain; }
         .header-title { text-align: center; flex: 1; }
         .header-title h1 { color: #2c3e50; margin: 0; font-size: 22px; }
+
+        /* شريط الإحصائيات العامة */
+        .stats-bar { display: flex; justify-content: center; gap: 30px; background-color: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .stat-item { text-align: center; }
+        .stat-num { font-size: 18px; font-weight: bold; color: #2563eb; }
+        .stat-label { font-size: 14px; color: #64748b; }
 
         /* شريط التصنيفات التفاعلي */
         .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; white-space: nowrap; scrollbar-width: thin; }
@@ -42,11 +48,22 @@
             </div>
             <img src="/static/mca.png" alt="شعار دار الثقافة" onerror="this.style.display='none'">
         </div>
+
+        <!-- شريط الإحصائيات العامة التفاعلي -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-num" id="totalBooksCount">...</div>
+                <div class="stat-label">إجمالي الكتب</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="totalCategoriesCount">...</div>
+                <div class="stat-label">التصنيفات المعرفية</div>
+            </div>
+        </div>
         
         <!-- شريط التصنيفات -->
         <div class="categories-bar" id="categoriesBar">
             <button class="category-chip active" onclick="loadAllBooks(this)">الكل</button>
-            <!-- سيتم تعبئة التصنيفات تلقائياً هنا -->
         </div>
 
         <!-- حقل البحث مع زر البحث -->
@@ -83,11 +100,16 @@
     </div>
 
     <script>
-        // جلب التصنيفات وضخها في الشريط عند فتح الصفحة
+        // جلب الإحصائيات والتصنيفات وضخها عند فتح الصفحة
         window.onload = function() {
             fetch('/api/stats')
                 .then(response => response.json())
                 .then(data => {
+                    // تحديث أعداد الإحصائيات
+                    document.getElementById('totalBooksCount').innerText = data.total_books.toLocaleString();
+                    document.getElementById('totalCategoriesCount').innerText = data.categories_count;
+
+                    // تعبئة شريط التصنيفات
                     let bar = document.getElementById('categoriesBar');
                     data.categories.forEach(cat => {
                         let btn = document.createElement('button');
@@ -123,7 +145,6 @@
 
         function searchBooks() {
             let query = document.getElementById('searchInput').value;
-            // إزالة التحديد عن التصنيفات عند البحث الحر
             document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
             
             fetch(`/api/books?query=${encodeURIComponent(query)}`)
@@ -132,11 +153,8 @@
         }
 
         function filterByCategory(categoryName, element) {
-            // تحديث الزر النشط
             document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
             element.classList.add('active');
-            
-            // تفريغ حقل البحث
             document.getElementById('searchInput').value = '';
 
             fetch(`/api/books/category/${encodeURIComponent(categoryName)}`)
