@@ -19,6 +19,35 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+import os
+from fastapi.responses import FileResponse
+
+
+# 1. مسار لإعطاء إحصائيات سريعة عن قاعدة البيانات
+@app.get("/api/stats")
+def get_database_stats(db: Session = Depends(get_db)):
+  total_books = db.query(Book).count()
+  categories = db.query(Book.category).distinct().all()
+  cat_list = [c[0] for c in categories if c[0]]
+
+  return {
+      "total_books": total_books,
+      "categories_count": len(cat_list),
+      "categories": cat_list,
+  }
+
+
+# 2. مسار لتنزيل ملف قاعدة البيانات الاحتياطي محلياً
+@app.api_route("/api/download-db", methods=["GET", "HEAD"])
+def download_database():
+  db_path = "library.db"
+  if os.path.exists(db_path):
+    return FileResponse(
+        db_path, media_type="application/octet-stream", filename="library.db"
+    )
+  return {"error": "ملف قاعدة البيانات غير موجود بعد."}
+
+
 # جدول الكتب في قاعدة البيانات
 class Book(Base):
   __tablename__ = "books"
