@@ -76,8 +76,9 @@ def read_root(request: Request, db: Session = Depends(get_db)):
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
   reservations = db.query(Reservation).all()
+  books = db.query(Book).all()  # أضفنا هذا السطر لجلب الكتب
   return templates.TemplateResponse(
-      request, "admin.html", {"reservations": reservations}
+      request, "admin.html", {"reservations": reservations, "books": books}
   )
 
 
