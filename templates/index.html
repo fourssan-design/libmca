@@ -1,4 +1,3 @@
-HTML
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -6,7 +5,7 @@ HTML
     <title>مكتبة دار الثقافة بأدرار - حجز الكتب</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; text-align: center; }
         .search-box { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -24,11 +23,12 @@ HTML
 
 <div class="container">
     <h1>مكتبة دار الثقافة بأدرار - تصفح وحجز الكتب</h1>
-    <input type="text" id="searchInput" class="search-box" placeholder="ابحث بالعنوان، المؤلف، أو التصنيف..." onkeyup="searchBooks()">
+    <input type="text" id="searchInput" class="search-box" placeholder="ابحث برقم الكتاب، العنوان، أو المؤلف..." onkeyup="searchBooks()">
     
     <table id="booksTable">
         <thead>
             <tr>
+                <th>رقم الكتاب</th>
                 <th>عنوان الكتاب</th>
                 <th>المؤلف</th>
                 <th>التصنيف</th>
@@ -38,6 +38,7 @@ HTML
         <tbody id="booksBody">
             {% for book in books %}
             <tr>
+                <td>{{ book.book_number }}</td>
                 <td>{{ book.title }}</td>
                 <td>{{ book.author }}</td>
                 <td>{{ book.category }}</td>
@@ -47,7 +48,6 @@ HTML
         </tbody>
     </table>
 
-    <!-- قسم رفع ملفات إكسل للإدارة -->
     <div class="admin-section">
         <h3>لوحة أمين المكتبة: استيراد الكتب من ملفات Excel</h3>
         <input type="text" id="catName" placeholder="اسم التصنيف (مثال: تاريخ الجزائر)" value="تاريخ">
@@ -56,7 +56,6 @@ HTML
     </div>
 </div>
 
-<!-- نافذة حجز الكتاب -->
 <div id="reserveModal" class="modal">
     <div class="modal-content">
         <h3 id="modalBookTitle">حجز الكتاب</h3>
@@ -90,6 +89,7 @@ HTML
         
         books.forEach(book => {
             let row = `<tr>
+                <td>${book.book_number || ''}</td>
                 <td>${book.title}</td>
                 <td>${book.author}</td>
                 <td>${book.category}</td>
@@ -130,7 +130,7 @@ HTML
 
     async function uploadExcel() {
         let fileInput = document.getElementById('excelFile');
-        let catName = document.getElementById('catName').value;
+        let catName = document.getElementById('catName5').value || document.getElementById('catName').value;
 
         if(fileInput.files.length === 0) {
             alert('الرجاء اختيار ملف Excel أولاً');
@@ -153,6 +153,10 @@ HTML
             alert('حدث خطأ أثناء الرفع: ' + (result.error || 'خطأ غير معروف'));
         }
     }
+</script>
+
+</body>
+</html>
 </script>
 
 </body>
