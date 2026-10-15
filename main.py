@@ -60,8 +60,8 @@ class ReservationCreate(BaseModel):
 def read_root(request: Request, db: Session = Depends(get_db)):
   books = db.query(Book).all()
   return templates.TemplateResponse(
-      "index.html", {"request": request, "books": books}
-  )
+      request, "index.html", {"books": books}
+  )  # تم تمرير request كمتغير أول مباشر
 
 
 @app.get("/api/books")
