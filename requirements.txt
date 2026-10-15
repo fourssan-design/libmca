@@ -1,7 +1,7 @@
-
 fastapi
 uvicorn
 sqlalchemy
 jinja2
 pandas
 openpyxl
+python-multipart
