@@ -1,4 +1,3 @@
-Python
 from datetime import date
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Request
