@@ -188,8 +188,3 @@ def upload_excel(
     }
   except Exception as e:
     return {"error": str(e)}
-            f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
-        )
-    }
-  except Exception as e:
-    return {"error": str(e)}
