@@ -2,20 +2,24 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>فهارس مكتبة دار الثقافة - أدرار</title>
+    <title>فهارس مكتبة دار الثقافة</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f9f9f9; margin: 0; padding: 20px; direction: rtl; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; }
-        .search-box { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
-        th { background-color: #f2f2f2; }
+        body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; direction: rtl; }
+        .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 25px; font-size: 26px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .search-box { width: 100%; padding: 14px; font-size: 16px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        .search-box:focus { border-color: #3498db; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: right; }
+        th { background-color: #f1f5f9; color: #334155; font-weight: bold; }
+        /* إبراز عناوين الكتب */
+        .book-title { font-weight: bold; color: #1d4ed8; font-size: 16px; }
+        .book-num { color: #64748b; font-size: 14px; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📚 فهارس مكتبة دار الثقافة - أدرار</h1>
+        <h1>📖 فهارس مكتبة دار الثقافة</h1>
         
         <!-- حقل البحث -->
         <input type="text" id="searchInput" class="search-box" placeholder="ابحث عن عنوان كتاب، مؤلف، أو تصنيف..." onkeyup="searchBooks()">
@@ -24,17 +28,17 @@
         <table id="booksTable">
             <thead>
                 <tr>
-                    <th>رقم الفهرس</th>
-                    <th>العنوان</th>
-                    <th>المؤلف</th>
-                    <th>التصنيف</th>
+                    <th style="width: 15%;">رقم الكتاب</th>
+                    <th style="width: 45%;">عنوان الكتاب</th>
+                    <th style="width: 25%;">المؤلف</th>
+                    <th style="width: 15%;">التصنيف</th>
                 </tr>
             </thead>
             <tbody id="booksBody">
                 {% for book in books %}
                 <tr>
-                    <td>{{ book.book_number }}</td>
-                    <td>{{ book.title }}</td>
+                    <td class="book-num">{{ book.book_number }}</td>
+                    <td><span class="book-title">{{ book.title }}</span></td>
                     <td>{{ book.author }}</td>
                     <td>{{ book.category }}</td>
                 </tr>
@@ -54,8 +58,8 @@
                     data.forEach(book => {
                         let tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${book.book_number || ''}</td>
-                            <td>${book.title}</td>
+                            <td class="book-num">${book.book_number || ''}</td>
+                            <td><span class="book-title">${book.title}</span></td>
                             <td>${book.author}</td>
                             <td>${book.category}</td>
                         `;
