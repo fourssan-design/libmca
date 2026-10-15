@@ -11,7 +11,7 @@ from sqlalchemy import Column, Date, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-# 1. إعداد التطبيق أولاً لتجنب أي أخطاء في الترتيب
+# 1. إعداد التطبيق
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
 
@@ -44,7 +44,7 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
-# إنشاء الجداول (بدون حذف لمنع ضياع البيانات)
+# إنشاء الجداول
 Base.metadata.create_all(bind=engine)
 
 
