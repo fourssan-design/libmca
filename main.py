@@ -39,7 +39,12 @@ class Book(Base):
   category = Column(String, index=True)
   total_copies = Column(Integer, default=1)
 
-
+# API لجلب الكتب حسب التصنيف المحدد
+@app.get("/api/books/category/{category_name}")
+def get_books_by_category(category_name: str, db: Session = Depends(get_db)):
+  books = db.query(Book).filter(Book.category == category_name).all()
+  return books
+    
 # جدول الحجوزات
 class Reservation(Base):
   __tablename__ = "reservations"
