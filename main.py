@@ -109,7 +109,7 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   }
 
 
-# API استيراد الكتب واستخراج رقم الكتاب من العمود الأول
+# API استيراد الكتب وتصحيح قراءة الأعمدة بدقة
 @app.post("/api/upload-excel")
 def upload_excel(
     category_name: str = "تاريخ",
@@ -121,29 +121,41 @@ def upload_excel(
     df = pd.read_excel(io.BytesIO(contents), header=None)
 
     added_count = 0
+    # نبدأ من الصف رقم 2 حيث تبدأ البيانات الفعلية
     for index, row in df.iloc[2:].iterrows():
-      # استخراج رقم الكتاب من العمود الأول (الرقم)
-      b_num = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
-      title = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
-      author = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "غير معروف"
-      note = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+      # استخراج رقم الكتاب (الرقم التسلسلي) من العمود الأول
+      b_num = (
+          str(row.iloc[0]).strip()
+          if pd.notna(row.iloc[0]) and str(row.iloc[0]) != "nan"
+          else ""
+      )
+      # استخراج العنوان من العمود الثاني
+      title = (
+          str(row.iloc[1]).strip()
+          if pd.notna(row.iloc[1]) and str(row.iloc[1]) != "nan"
+          else ""
+      )
+      # استخراج المؤلف من العمود الثالث
+      author = (
+          str(row.iloc[2]).strip()
+          if pd.notna(row.iloc[2]) and str(row.iloc[2]) != "nan"
+          else "غير معروف"
+      )
+      # استخراج الملاحظة (مثل الأجزاء) من العمود الرابع
+      note = (
+          str(row.iloc[3]).strip()
+          if pd.notna(row.iloc[3]) and str(row.iloc[3]) != "nan"
+          else ""
+      )
 
-      copies = 1
-      try:
-        val = row.iloc[6]
-        if pd.notna(val) and str(val).isdigit():
-          copies = int(val)
-      except:
-        copies = 1
-
-      if title and title != "nan":
-        full_title = f"{title} ({note})" if note and note != "nan" else title
+      if title:
+        full_title = f"{title} ({note})" if note else title
         book = Book(
-            book_number=b_num if b_num != "nan" else "",
+            book_number=b_num,
             title=full_title,
             author=author,
             category=category_name,
-            total_copies=copies,
+            total_copies=1,
         )
         db.add(book)
         added_count += 1
@@ -153,6 +165,9 @@ def upload_excel(
         "message": (
             f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
         )
+    }
+  except Exception as e:
+    return {"error": str(e)}
     }
   except Exception as e:
     return {"error": str(e)}
