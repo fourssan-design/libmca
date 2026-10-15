@@ -134,13 +134,20 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   }
 
 
-# API استيراد الكتب من ملفات Excel
+# API استيراد الكتب من ملفات Excel مع حماية بكلمة السر
 @app.post("/api/upload-excel")
 def upload_excel(
     category_name: str = "تاريخ",
+    admin_password: str = "",
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
+  # التحقق من كلمة سر أمين المكتبة
+  if admin_password != "admin123":
+    raise HTTPException(
+        status_code=403, detail="كلمة سر أمين المكتبة غير صحيحة!"
+    )
+
   try:
     contents = file.file.read()
     df = pd.read_excel(io.BytesIO(contents), header=None)
