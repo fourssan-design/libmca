@@ -26,6 +26,36 @@ class Book(Base):
   category = Column(String)
   total_copies = Column(Integer, default=1)
 
+import io
+import pandas as pd
+from fastapi import File, UploadFile
+
+
+# مسار لرفع ملف الاكسل وإدخال الكتب تلقائياً
+@app.post("/api/upload-excel")
+def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
+  try:
+    contents = file.file.read()
+    df = pd.read_excel(io.BytesIO(contents))
+
+    # نفترض أن أعمدة ملف الاكسل هي: title, author, category, copies
+    added_count = 0
+    for index, row in df.iterrows():
+      book = Book(
+          title=str(row.get("title", "بدون عنوان")),
+          author=str(row.get("author", "غير معروف")),
+          category=str(row.get("category", "عام")),
+          total_copies=int(row.get("copies", 1)),
+      )
+      db.add(book)
+      added_count += 1
+
+    db.commit()
+    return {
+        "message": f"تمت إضافة {added_count} كتاباً بنجاح إلى قاعدة البيانات!"
+    }
+  except Exception as e:
+    return {"error": str(e)}
 
 # جدول الحجوزات
 class Reservation(Base):
