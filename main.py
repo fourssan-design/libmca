@@ -1,8 +1,10 @@
+import io
 from datetime import date
-from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, Request
+from typing import Optional
+from fastapi import FastAPI, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import pandas as pd
 from pydantic import BaseModel
 from sqlalchemy import Column, Date, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -23,39 +25,9 @@ class Book(Base):
   id = Column(Integer, primary_key=True, index=True)
   title = Column(String, index=True)
   author = Column(String, index=True)
-  category = Column(String)
+  category = Column(String, index=True)
   total_copies = Column(Integer, default=1)
 
-import io
-import pandas as pd
-from fastapi import File, UploadFile
-
-
-# مسار لرفع ملف الاكسل وإدخال الكتب تلقائياً
-@app.post("/api/upload-excel")
-def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
-  try:
-    contents = file.file.read()
-    df = pd.read_excel(io.BytesIO(contents))
-
-    # نفترض أن أعمدة ملف الاكسل هي: title, author, category, copies
-    added_count = 0
-    for index, row in df.iterrows():
-      book = Book(
-          title=str(row.get("title", "بدون عنوان")),
-          author=str(row.get("author", "غير معروف")),
-          category=str(row.get("category", "عام")),
-          total_copies=int(row.get("copies", 1)),
-      )
-      db.add(book)
-      added_count += 1
-
-    db.commit()
-    return {
-        "message": f"تمت إضافة {added_count} كتاباً بنجاح إلى قاعدة البيانات!"
-    }
-  except Exception as e:
-    return {"error": str(e)}
 
 # جدول الحجوزات
 class Reservation(Base):
@@ -68,7 +40,7 @@ class Reservation(Base):
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="نظام مكتبة دار الثقافة")
+app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
 
 
@@ -86,14 +58,16 @@ class ReservationCreate(BaseModel):
   reservation_date: date
 
 
+# الصفحة الرئيسية لتصفح الكتب
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
-  books = db.query(Book).all()
+  books = db.query(Book).limit(50).all()  # عرض أول 50 كتاب كبداية
   return templates.TemplateResponse(
       request, "index.html", {"books": books}
-  )  # تم تمرير request كمتغير أول مباشر
+  )
 
 
+# API للبحث عن الكتب
 @app.get("/api/books")
 def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   if query:
@@ -107,11 +81,12 @@ def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
         .all()
     )
   else:
-    books = db.query(Book).all()
+    books = db.query(Book).limit(50).all()
   return books
 
 
-@app.api_route("/api/reserve", methods=["POST"])
+# API لتسجيل حجز جديد
+@app.post("/api/reserve")
 def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   book = db.query(Book).filter(Book.id == reservation.book_id).first()
   if not book:
@@ -130,3 +105,52 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
       "reservation_id": new_res.id,
       "date": str(new_res.reservation_date),
   }
+
+
+# API استيراد الكتب تلقائياً من ملفات Excel بناءً على هيكل ملفاتكم
+@app.post("/api/upload-excel")
+def upload_excel(
+    category_name: str = "تاريخ",
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+  try:
+    contents = file.file.read()
+    # قراءة الملف متجاهلين أول سطرين (الترويسة) بناءً على تصميم ملفاتكم
+    df = pd.read_excel(io.BytesIO(contents), header=None)
+
+    added_count = 0
+    # نبدأ من الصف رقم 2 (الذي يحتوي على البيانات الفعلية)
+    for index, row in df.iloc[2:].iterrows():
+      title = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
+      author = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "غير معروف"
+      note = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+
+      # محاولة استخراج عدد النسخ إذا وجد في العمود السادس أو الملاحظات
+      copies = 1
+      try:
+        val = row.iloc[6]
+        if pd.notna(val) and str(val).isdigit():
+          copies = int(val)
+      except:
+        copies = 1
+
+      if title and title != "nan":
+        full_title = f"{title} ({note})" if note and note != "nan" else title
+        book = Book(
+            title=full_title,
+            author=author,
+            category=category_name,
+            total_copies=copies,
+        )
+        db.add(book)
+        added_count += 1
+
+    db.commit()
+    return {
+        "message": (
+            f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
+        )
+    }
+  except Exception as e:
+    return {"error": str(e)}
