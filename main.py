@@ -1,5 +1,4 @@
 import io
-import logging
 import os
 from datetime import date
 from typing import Optional
@@ -12,10 +11,6 @@ from sqlalchemy import Column, Date, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-# تفعيل سجلات التصحيح لرؤية تفاصيل الاتصال بقاعدة البيانات بدقة في سجلات Render
-logging.basicConfig()
-logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
-
 # 1. إعداد التطبيق
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 templates = Jinja2Templates(directory="templates")
@@ -23,12 +18,14 @@ templates = Jinja2Templates(directory="templates")
 # 2. إعداد قاعدة البيانات المحلية SQLite (من ملف library.db المرفوع على المستودع)
 SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# جدول الكتب في قاعدة البيانات السحابية
+# جدول الكتب في قاعدة البيانات
 class Book(Base):
   __tablename__ = "books"
   id = Column(Integer, primary_key=True, index=True)
@@ -39,7 +36,7 @@ class Book(Base):
   total_copies = Column(Integer, default=1)
 
 
-# جدول الحجوزات السحابي
+# جدول الحجوزات
 class Reservation(Base):
   __tablename__ = "reservations"
   id = Column(Integer, primary_key=True, index=True)
@@ -48,7 +45,7 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
-# إنشاء الجداول في السحاب تلقائياً
+# إنشاء الجداول تلقائياً إن لم تكن موجودة
 Base.metadata.create_all(bind=engine)
 
 
@@ -66,11 +63,20 @@ class ReservationCreate(BaseModel):
   reservation_date: date
 
 
-# الصفحة الرئيسية لتصفح الكتب
+# الصفحة الرئيسية للزوار (تصفح وبحث وحجز الكتب فقط)
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
   books = db.query(Book).limit(50).all()
   return templates.TemplateResponse(request, "index.html", {"books": books})
+
+
+# صفحة لوحة تحكم أمين المكتبة المستقلة (المحمية)
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+  reservations = db.query(Reservation).all()
+  return templates.TemplateResponse(
+      request, "admin.html", {"reservations": reservations}
+  )
 
 
 # API للبحث عن الكتب
