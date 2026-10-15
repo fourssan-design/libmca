@@ -120,6 +120,13 @@ def get_database_stats(db: Session = Depends(get_db)):
   }
 
 
+# نموذج بيانات الحجز الواردة من الزائر
+class ReservationCreate(BaseModel):
+  book_id: int
+  user_name: str
+  reservation_date: date
+
+
 # API لتسجيل حجز جديد
 @app.post("/api/reserve")
 def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
@@ -136,7 +143,9 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   db.commit()
   db.refresh(new_res)
   return {
-      "message": "تم حجز الكتاب بنجاح!",
+      "message": (
+          "تم تسجيل طلب حجز الكتاب بنجاح! سيتم التواصل معك عند جاهزيته."
+      ),
       "reservation_id": new_res.id,
       "date": str(new_res.reservation_date),
   }
