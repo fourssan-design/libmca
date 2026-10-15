@@ -2,8 +2,18 @@ import io
 import os
 from datetime import date
 from typing import Optional
-from fastapi import FastAPI, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi import (
+    Cookie,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+)
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
@@ -72,16 +82,6 @@ def read_root(request: Request, db: Session = Depends(get_db)):
   return templates.TemplateResponse(request, "index.html", {"books": books})
 
 
-# صفحة لوحة تحكم أمين المكتبة
-@app.get("/admin", response_class=HTMLResponse)
-def admin_dashboard(request: Request, db: Session = Depends(get_db)):
-  reservations = db.query(Reservation).all()
-  books = db.query(Book).all()  # أضفنا هذا السطر لجلب الكتب
-  return templates.TemplateResponse(
-      request, "admin.html", {"reservations": reservations, "books": books}
-  )
-
-
 # API للبحث عن الكتب
 @app.get("/api/books")
 def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
@@ -119,13 +119,6 @@ def get_database_stats(db: Session = Depends(get_db)):
       "categories_count": len(cat_list),
       "categories": cat_list,
   }
-
-
-# نموذج بيانات الحجز الواردة من الزائر
-class ReservationCreate(BaseModel):
-  book_id: int
-  user_name: str
-  reservation_date: date
 
 
 # API لتسجيل حجز جديد
@@ -229,3 +222,77 @@ def upload_excel(
     }
   except Exception as e:
     return {"error": str(e)}
+
+
+# ==========================================
+# نظام حماية لوحة التحكم (Admin Authentication)
+# ==========================================
+
+
+# صفحة تسجيل الدخول للوحة التحكم
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin_login_page(request: Request):
+  return """
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <title>تسجيل دخول أمين المكتبة</title>
+        <style>
+            body { font-family: Tahoma, sans-serif; background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; direction: rtl; }
+            .login-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 350px; text-align: center; }
+            .login-card h2 { color: #881337; margin-bottom: 20px; font-size: 20px; }
+            .login-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+            .login-card button { width: 100%; background-color: #e11d48; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px; }
+            .login-card button:hover { background-color: #be123c; }
+        </style>
+    </head>
+    <body>
+        <div class="login-card">
+            <h2>🔒 بوابة أمين المكتبة</h2>
+            <form action="/admin/login" method="POST">
+                <input type="password" name="password" placeholder="أدخل كلمة سر أمين المكتبة" required>
+                <button type="submit">دخول لوحة التحكم</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+
+
+# التحقق من كلمة السر ومنح صلاحية الجلسة
+@app.post("/admin/login")
+def admin_login(response: Response, password: str = Form(...)):
+  if password != "admin123":
+    return RedirectResponse(url="/admin/login", status_code=303)
+
+  resp = RedirectResponse(url="/admin", status_code=303)
+  resp.set_cookie(
+      key="admin_session", value="authenticated", httponly=True, max_age=86400
+  )
+  return resp
+
+
+# مسار لوحة التحكم المحمي (يتطلب كلمة السر)
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin_session: Optional[str] = Cookie(None),
+):
+  if admin_session != "authenticated":
+    return RedirectResponse(url="/admin/login", status_code=303)
+
+  reservations = db.query(Reservation).all()
+  books = db.query(Book).all()
+  return templates.TemplateResponse(
+      request, "admin.html", {"reservations": reservations, "books": books}
+  )
+
+
+# زر لتسجيل الخروج
+@app.get("/admin/logout")
+def admin_logout():
+  resp = RedirectResponse(url="/admin/login", status_code=303)
+  resp.delete_cookie(key="admin_session")
+  return resp
