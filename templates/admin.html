@@ -31,6 +31,12 @@
         .upload-btn { background-color: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; height: 41px; }
         .upload-btn:hover { background-color: #059669; }
 
+        /* قسم إضافة الورشات */
+        .workshop-admin-section { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .workshop-admin-section h3 { margin-top: 0; color: #1e293b; font-size: 16px; border-right: 4px solid #8b5cf6; padding-right: 8px; }
+        .workshop-btn { background-color: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .workshop-btn:hover { background-color: #7c3aed; }
+
         h2 { color: #1e293b; font-size: 18px; margin-top: 0; border-right: 4px solid #2563eb; padding-right: 10px; }
 
         .table-responsive { width: 100%; overflow-x: auto; }
@@ -94,6 +100,32 @@
                 </div>
                 <button class="upload-btn" onclick="uploadExcelFile()">رفع وإضافة الكتب</button>
             </div>
+        </div>
+
+        <!-- قسم إضافة الورشات والأندية -->
+        <div class="workshop-admin-section">
+            <h3>🎨 إضافة ورشة أو نادي ثقافي جديد</h3>
+            <form id="addWorkshopForm" onsubmit="addNewWorkshop(event)">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label>عنوان الورشة أو النادي:</label>
+                        <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح وفن التمثيل" required>
+                    </div>
+                    <div class="form-group">
+                        <label>اسم المشرف:</label>
+                        <input type="text" id="wSupervisor" placeholder="اسم المشرف أو المؤطر" required>
+                    </div>
+                    <div class="form-group">
+                        <label>الأوقات وأيام النشاط:</label>
+                        <input type="text" id="wSchedule" placeholder="مثال: الأربعاء والسبت 14:00" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>وصف الورشة:</label>
+                    <textarea id="wDesc" placeholder="اكتب نبذة تعريفية قصيرة عن الورشة أو النادي..." required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; background: white; box-sizing: border-box; font-family: Tahoma, sans-serif;" rows="2"></textarea>
+                </div>
+                <button type="submit" class="workshop-btn">إضافة الورشة للموقع</button>
+            </form>
         </div>
 
         <h2>قائمة طلبات حجز الكتب النشطة</h2>
@@ -181,7 +213,7 @@
                 btn.disabled = false;
                 if (data.message) {
                     alert(data.message);
-                    location.reload(); // تحديث الصفحة لرؤية العدد الجديد للكتب
+                    location.reload(); 
                 } else {
                     alert(data.error || 'حدث خطأ أثناء رفع الملف.');
                 }
@@ -191,6 +223,26 @@
                 btn.disabled = false;
                 alert('حدث خطأ في الاتصال بالخادم.');
             });
+        }
+
+        function addNewWorkshop(event) {
+            event.preventDefault();
+            let title = document.getElementById('wTitle').value.trim();
+            let supervisor = document.getElementById('wSupervisor').value.trim();
+            let schedule = document.getElementById('wSchedule').value.trim();
+            let description = document.getElementById('wDesc').value.trim();
+
+            fetch('/api/admin/add-workshop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, supervisor, schedule, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تمت إضافة الورشة بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء إضافة الورشة."));
         }
     </script>
 </body>
