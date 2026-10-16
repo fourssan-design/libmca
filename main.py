@@ -222,7 +222,69 @@ def upload_excel(
     }
   except Exception as e:
     return {"error": str(e)}
+# ==========================================
+# إدارة الأندية والورشات التكوينية
+# ==========================================
 
+
+class Workshop(Base):
+  __tablename__ = "workshops"
+  id = Column(Integer, primary_key=True, index=True)
+  title = Column(String, index=True)
+  description = Column(String)
+  supervisor = Column(String)
+  schedule = Column(String)
+
+
+class WorkshopRegistration(Base):
+  __tablename__ = "workshop_registrations"
+  id = Column(Integer, primary_key=True, index=True)
+  workshop_id = Column(Integer)
+  user_name = Column(String)
+  user_phone = Column(String)
+  user_age = Column(Integer)
+
+
+Base.metadata.create_all(bind=engine)
+
+
+class WorkshopRegCreate(BaseModel):
+  workshop_id: int
+  user_name: str
+  user_phone: str
+  user_age: int
+
+
+# مسار صفحة الأندية والورشات التكوينية للزوار
+@app.get("/workshops", response_class=HTMLResponse)
+def workshops_page(request: Request, db: Session = Depends(get_db)):
+  workshops = db.query(Workshop).all()
+  return templates.TemplateResponse(
+      request, "workshops.html", {"workshops": workshops}
+  )
+
+
+# API لتسجيل المشاركة في الورشة
+@app.post("/api/workshop-register")
+def register_workshop(
+    reg: WorkshopRegCreate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == reg.workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  new_reg = WorkshopRegistration(
+      workshop_id=reg.workshop_id,
+      user_name=reg.user_name,
+      user_phone=reg.user_phone,
+      user_age=reg.user_age,
+  )
+  db.add(new_reg)
+  db.commit()
+  db.refresh(new_reg)
+  return {
+      "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
+  }
 
 # ==========================================
 # نظام حماية لوحة التحكم (Admin Authentication)
