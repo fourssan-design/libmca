@@ -286,7 +286,12 @@ def admin_dashboard(
   reservations = db.query(Reservation).all()
   books = db.query(Book).all()
   return templates.TemplateResponse(
-      request, "admin.html", {"
+      request, "admin.html", {"reservations": reservations, "books": books}
+  )
+
+
+# زر لتسجيل الخروج
+@app.get("/admin/logout")
 def admin_logout():
   resp = RedirectResponse(url="/admin/login", status_code=303)
   resp.delete_cookie(key="admin_session")
