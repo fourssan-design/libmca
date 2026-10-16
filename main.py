@@ -285,7 +285,25 @@ def register_workshop(
   return {
       "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
   }
+# API لإضافة ورشة جديدة من لوحة التحكم
+class WorkshopCreate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
 
+
+@app.post("/api/admin/add-workshop")
+def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
+  new_workshop = Workshop(
+      title=w_data.title,
+      description=w_data.description,
+      supervisor=w_data.supervisor,
+      schedule=w_data.schedule,
+  )
+  db.add(new_workshop)
+  db.commit()
+  return {"message": "تمت إضافة الورشة بنجاح!"}
 # ==========================================
 # نظام حماية لوحة التحكم (Admin Authentication)
 # ==========================================
