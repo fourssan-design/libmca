@@ -3,37 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم أمين المكتبة - دار الثقافة أدرار</title>
+    <title>لوحة التحكم المركزية - دار الثقافة أدرار</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; direction: rtl; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e11d48; padding-bottom: 15px; margin-bottom: 20px; }
-        .header-title h1 { color: #881337; margin: 0; font-size: 20px; }
+        .header-section { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .header-title h1 { color: #1e3a8a; margin: 0; font-size: 20px; }
         .back-link { background-color: #2563eb; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: bold; }
         .back-link:hover { background-color: #1d4ed8; }
 
-        /* بطاقات الإحصائيات التحليلية */
-        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        /* بطاقات الإحصائيات العامة */
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; border-right: 4px solid #2563eb; }
         .stat-card.green { border-right-color: #10b981; }
         .stat-card.purple { border-right-color: #8b5cf6; }
         .stat-card-num { font-size: 22px; font-weight: bold; color: #1e293b; margin-top: 5px; }
         .stat-card-label { font-size: 13px; color: #64748b; }
 
-        /* قسم رفع ملفات الـ Excel */
-        .upload-section { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
-        .upload-section h3 { margin-top: 0; color: #1e293b; font-size: 16px; border-right: 4px solid #10b981; padding-right: 8px; }
-        .upload-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+        /* أزرار التبديل بين الأقسام (Tabs) */
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { background: #e2e8f0; color: #475569; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .tab-btn.active { background: #2563eb; color: white; }
+
+        /* الأقسام البرمجية */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* تنسيقات النماذج والجداول */
+        .admin-section-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .admin-section-box h3 { margin-top: 0; color: #1e293b; font-size: 16px; border-right: 4px solid #10b981; padding-right: 8px; }
+        .admin-section-box.purple h3 { border-right-color: #8b5cf6; color: #6d28d9; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; margin-bottom: 12px; }
         .form-group { display: flex; flex-direction: column; gap: 5px; }
         .form-group label { font-size: 13px; font-weight: bold; color: #334155; }
-        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; background: white; }
-        .upload-btn { background-color: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; height: 41px; }
-
-        /* قسم إضافة الورشات */
-        .workshop-admin-section { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
-        .workshop-admin-section h3 { margin-top: 0; color: #1e293b; font-size: 16px; border-right: 4px solid #8b5cf6; padding-right: 8px; }
-        .workshop-btn { background-color: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; background: white; box-sizing: border-box; font-family: Tahoma, sans-serif; }
+        
+        .action-btn { background-color: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; height: 41px; }
+        .action-btn.purple { background-color: #8b5cf6; }
+        .action-btn:hover { opacity: 0.9; }
 
         h2 { color: #1e293b; font-size: 18px; margin-top: 0; border-right: 4px solid #2563eb; padding-right: 10px; }
 
@@ -52,15 +61,15 @@
         <!-- ترويسة لوحة التحكم -->
         <div class="header-section">
             <div class="header-title">
-                <h1>🛠️ لوحة تحكم أمين المكتبة - إدارة الفهارس والورشات</h1>
+                <h1>🎛️ لوحة التحكم المركزية - دار الثقافة أدرار</h1>
             </div>
-            <a href="/" class="back-link">الذهاب للفهارس الرئيسية</a>
+            <a href="/" class="back-link">الذهاب للموقع الرئيسي</a>
         </div>
 
-        <!-- بطاقات الإحصائيات التحليلية السريعة -->
+        <!-- بطاقات الإحصائيات العامة الشاملة -->
         <div class="analytics-grid">
             <div class="stat-card">
-                <div class="stat-card-label">إجمالي طلبات الحجز</div>
+                <div class="stat-card-label">طلبات حجز الكتب</div>
                 <div class="stat-card-num">{{ reservations | length }}</div>
             </div>
             <div class="stat-card green">
@@ -68,141 +77,161 @@
                 <div class="stat-card-num">{{ books | length }}</div>
             </div>
             <div class="stat-card purple">
-                <div class="stat-card-label">الورشات والأندية النشطة</div>
+                <div class="stat-card-label">الورشات والنوادي النشطة</div>
                 <div class="stat-card-num">{{ workshops | length }}</div>
             </div>
         </div>
 
-        <!-- أداة رفع ملفات Excel مباشرة -->
-        <div class="upload-section">
-            <h3>📥 استيراد وتحديث الكتب عبر ملف Excel</h3>
-            <div class="upload-form">
-                <div class="form-group">
-                    <label>اختر ملف Excel (.xlsx):</label>
-                    <input type="file" id="excelFile" accept=".xlsx, .xls">
+        <!-- أزرار التبديل بين الأقسام (Tabs Navigation) -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('library', event)">📚 إدارة المكتبة والفهارس</button>
+            <button class="tab-btn" onclick="switchTab('workshops', event)">🎨 إدارة الورشات والأندية</button>
+        </div>
+
+        <!-- ================= القسم الأول: المكتبة وحجوزات الكتب ================= -->
+        <div id="library-tab" class="tab-content active">
+            <div class="admin-section-box">
+                <h3>📥 استيراد وتحديث الكتب عبر ملف Excel</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>اختر ملف Excel (.xlsx):</label>
+                        <input type="file" id="excelFile" accept=".xlsx, .xls">
+                    </div>
+                    <div class="form-group">
+                        <label>اسم التصنيف المعرفي:</label>
+                        <input type="text" id="categoryName" placeholder="مثال: تاريخ، أدب...">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة سر أمين المكتبة:</label>
+                        <input type="password" id="adminPassword" placeholder="أدخل كلمة السر">
+                    </div>
+                    <button class="action-btn" onclick="uploadExcelFile()">رفع وإضافة الكتب</button>
                 </div>
-                <div class="form-group">
-                    <label>اسم التصنيف المعرفي:</label>
-                    <input type="text" id="categoryName" placeholder="مثال: تاريخ، أدب...">
-                </div>
-                <div class="form-group">
-                    <label>كلمة سر أمين المكتبة:</label>
-                    <input type="password" id="adminPassword" placeholder="أدخل كلمة السر">
-                </div>
-                <button class="upload-btn" onclick="uploadExcelFile()">رفع وإضافة الكتب</button>
+            </div>
+
+            <h2>قائمة طلبات حجز الكتب النشطة</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%; text-align: center;">رقم الطلب</th>
+                            <th style="width: 30%;">اسم المستعير ورقم الهاتف</th>
+                            <th style="width: 35%;">عنوان الكتاب المحجوز</th>
+                            <th style="width: 15%;">رقم الكتاب</th>
+                            <th style="width: 10%;">تاريخ الاستلام</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if reservations %}
+                            {% for r in reservations %}
+                            <tr>
+                                <td class="res-num">{{ r.id }}</td>
+                                <td class="user-info">{{ r.user_name }}</td>
+                                <td class="book-name">
+                                    {% set book = namespace(title='غير معروف') %}
+                                    {% for b in books %}
+                                        {% if b.id == r.book_id %}
+                                            {% set book.title = b.title %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ book.title }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% for b in books %}
+                                        {% if b.id == r.book_id %}{{ b.book_number }}{% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ r.reservation_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات حجز مسجلة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- قسم إضافة الورشات والأندية -->
-        <div class="workshop-admin-section">
-            <h3>🎨 إضافة ورشة أو نادي ثقافي جديد</h3>
-            <form id="addWorkshopForm" onsubmit="addNewWorkshop(event)">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label>عنوان الورشة أو النادي:</label>
-                        <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح" required>
+        <!-- ================= القسم الثاني: الورشات والأندية التكوينية ================= -->
+        <div id="workshops-tab" class="tab-content">
+            <div class="admin-section-box purple">
+                <h3>🎨 إضافة ورشة أو نادي ثقافي جديد</h3>
+                <form id="addWorkshopForm" onsubmit="addNewWorkshop(event)">
+                    <div class="form-grid" style="margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label>عنوان الورشة أو النادي:</label>
+                            <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح" required>
+                        </div>
+                        <div class="form-group">
+                            <label>اسم المشرف:</label>
+                            <input type="text" id="wSupervisor" placeholder="اسم المشرف" required>
+                        </div>
+                        <div class="form-group">
+                            <label>الأوقات وأيام النشاط:</label>
+                            <input type="text" id="wSchedule" placeholder="مثال: الأربعاء 14:00" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>اسم المشرف:</label>
-                        <input type="text" id="wSupervisor" placeholder="اسم المشرف" required>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>وصف الورشة:</label>
+                        <textarea id="wDesc" placeholder="نبذة تعريفية..." required rows="2"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label>الأوقات وأيام النشاط:</label>
-                        <input type="text" id="wSchedule" placeholder="مثال: الأربعاء 14:00" required>
-                    </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label>وصف الورشة:</label>
-                    <textarea id="wDesc" placeholder="نبذة تعريفية..." required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; box-sizing: border-box;" rows="2"></textarea>
-                </div>
-                <button type="submit" class="workshop-btn">إضافة الورشة للموقع</button>
-            </form>
-        </div>
+                    <button type="submit" class="action-btn purple">إضافة الورشة للموقع</button>
+                </form>
+            </div>
 
-        <!-- جدول إدارة وتعديل الورشات الحالية -->
-        <h2>إدارة الورشات والأندية المسجلة حالياً</h2>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">عنوان الورشة</th>
-                        <th style="width: 18%;">المشرف</th>
-                        <th style="width: 18%;">الأوقات</th>
-                        <th style="width: 26%;">الوصف</th>
-                        <th style="width: 18%; text-align: center;">إجراءات التعديل</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if workshops %}
-                        {% for w in workshops %}
+            <h2>إدارة الورشات والأندية المسجلة حالياً</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
                         <tr>
-                            <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
-                            <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
-                            <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
-                            <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;" rows="2">{{ w.description }}</textarea></td>
-                            <td style="text-align: center;">
-                                <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 4px; width: 100%;">حفظ التعديل</button>
-                                <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">حذف</button>
-                            </td>
+                            <th style="width: 20%;">عنوان الورشة</th>
+                            <th style="width: 18%;">المشرف</th>
+                            <th style="width: 18%;">الأوقات</th>
+                            <th style="width: 26%;">الوصف</th>
+                            <th style="width: 18%; text-align: center;">إجراءات التعديل</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-
-        <h2 style="margin-top: 30px;">قائمة طلبات حجز الكتب النشطة</h2>
-
-        <!-- جدول عرض الحجوزات -->
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 10%; text-align: center;">رقم الطلب</th>
-                        <th style="width: 30%;">اسم المستعير ورقم الهاتف</th>
-                        <th style="width: 35%;">عنوان الكتاب المحجوز</th>
-                        <th style="width: 15%;">رقم الكتاب</th>
-                        <th style="width: 10%;">تاريخ الاستلام</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if reservations %}
-                        {% for r in reservations %}
-                        <tr>
-                            <td class="res-num">{{ r.id }}</td>
-                            <td class="user-info">{{ r.user_name }}</td>
-                            <td class="book-name">
-                                {% set book = namespace(title='غير معروف') %}
-                                {% for b in books %}
-                                    {% if b.id == r.book_id %}
-                                        {% set book.title = b.title %}
-                                    {% endif %}
-                                {% endfor %}
-                                {{ book.title }}
-                            </td>
-                            <td style="text-align: center;">
-                                {% for b in books %}
-                                    {% if b.id == r.book_id %}{{ b.book_number }}{% endif %}
-                                {% endfor %}
-                            </td>
-                            <td>{{ r.reservation_date }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات حجز مسجلة حتى الآن.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% if workshops %}
+                            {% for w in workshops %}
+                            <tr>
+                                <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;" rows="2">{{ w.description }}</textarea></td>
+                                <td style="text-align: center;">
+                                    <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 4px; width: 100%;">حفظ التعديل</button>
+                                    <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">حذف</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
+        // دالة التبديل بين الأقسام (Tabs)
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (tabName === 'library') {
+                document.getElementById('library-tab').classList.add('active');
+            } else if (tabName === 'workshops') {
+                document.getElementById('workshops-tab').classList.add('active');
+            }
+            event.currentTarget.classList.add('active');
+        }
+
         function uploadExcelFile() {
             let fileInput = document.getElementById('excelFile');
             let categoryInput = document.getElementById('categoryName').value.trim();
@@ -227,8 +256,7 @@
             let url = `/api/upload-excel?category_name=${encodeURIComponent(categoryInput)}&admin_password=${encodeURIComponent(passwordInput)}`;
 
             let btn = document.querySelector('.upload-btn');
-            btn.innerText = 'جاري الرفع...';
-            btn.disabled = true;
+            if(btn) { btn.innerText = 'جاري الرفع...'; btn.disabled = true; }
 
             fetch(url, {
                 method: 'POST',
@@ -236,19 +264,17 @@
             })
             .then(res => res.json())
             .then(data => {
-                btn.innerText = 'رفع وإضافة الكتب';
-                btn.disabled = false;
                 if (data.message) {
                     alert(data.message);
                     location.reload(); 
                 } else {
                     alert(data.error || 'حدث خطأ أثناء رفع الملف.');
+                    if(btn) { btn.innerText = 'رفع وإضافة الكتب'; btn.disabled = false; }
                 }
             })
             .catch(err => {
-                btn.innerText = 'رفع وإضافة الكتب';
-                btn.disabled = false;
                 alert('حدث خطأ في الاتصال بالخادم.');
+                if(btn) { btn.innerText = 'رفع وإضافة الكتب'; btn.disabled = false; }
             });
         }
 
