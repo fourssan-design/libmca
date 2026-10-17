@@ -484,3 +484,22 @@ def admin_logout():
   resp = RedirectResponse(url="/admin/login", status_code=303)
   resp.delete_cookie(key="admin_session")
   return resp
+
+from fastapi.responses import FileResponse
+
+
+# مسار لتحميل أحدث نسخة من قاعدة البيانات
+@app.get("/admin/download-db")
+def download_database(admin_session: Optional[str] = Cookie(None)):
+  if admin_session != "authenticated":
+    return RedirectResponse(url="/admin/login", status_code=303)
+
+  db_path = "library.db"
+  if os.path.exists(db_path):
+    return FileResponse(
+        db_path, media_type="application/octet-stream", filename="library.db"
+    )
+  else:
+    raise HTTPException(
+        status_code=404, detail="ملف قاعدة البيانات غير موجود."
+    )
