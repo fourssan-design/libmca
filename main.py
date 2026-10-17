@@ -407,7 +407,35 @@ def update_workshop(
   workshop.title = w_data.title
   workshop.description = w_data.description
   workshop.supervisor = w_data.supervisor
-  workshop.schedule = w_data.schedule  # <--- تأكد من إضافة هذا الجزء المكتمل تماماً
+  workshop.schedule = w_data.schedule
 
   db.commit()
   return {"message": "تم تحديث الورشة بنجاح!"}
+
+
+# API لحذف ورشة
+@app.delete("/api/admin/workshop/{workshop_id}")
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  db.delete(workshop)
+  db.commit()
+  return {"message": "تم حذف الورشة بنجاح!"}
+
+
+# ==========================================
+# نظام حماية لوحة التحكم (Admin Authentication)
+# ==========================================
+
+
+# صفحة تسجيل الدخول للوحة التحكم
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin_login_page(request: Request):
+  return """
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <title>
