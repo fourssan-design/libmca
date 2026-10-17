@@ -217,7 +217,46 @@
             </div>
         </div>
     </div>
-
+<!-- جدول قائمة الراغبين في الانخراط والمسجلين في الورشات -->
+            <h2 style="margin-top: 40px; border-right-color: #8b5cf6; color: #6d28d9;">📋 قائمة الراغبين في الانخراط والمسجلين بالورشات</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%; text-align: center;">رقم التسجيل</th>
+                            <th style="width: 25%;">اسم المشارك</th>
+                            <th style="width: 25%;">الورشة أو النادي المطلوب</th>
+                            <th style="width: 20%;">رقم الهاتف</th>
+                            <th style="width: 20%; text-align: center;">السن</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if registrations %}
+                            {% for reg in registrations %}
+                            <tr>
+                                <td class="res-num">{{ reg.id }}</td>
+                                <td style="font-weight: bold; color: #047857;">{{ reg.user_name }}</td>
+                                <td style="color: #2563eb; font-weight: bold;">
+                                    {% set w_name = namespace(title='ورشة غير معروفة') %}
+                                    {% for w in workshops %}
+                                        {% if w.id == reg.workshop_id %}
+                                            {% set w_name.title = w.title %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ w_name.title }}
+                                </td>
+                                <td>{{ reg.user_phone }}</td>
+                                <td style="text-align: center;">{{ reg.user_age }} سنة</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات انخراط مسجلة في الورشات حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
     <script>
         function switchTab(tabName, event) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
