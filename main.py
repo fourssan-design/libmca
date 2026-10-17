@@ -432,7 +432,7 @@ def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
 # صفحة تسجيل الدخول للوحة التحكم
 @app.get("/admin/login", response_class=HTMLResponse)
 def admin_login_page(request: Request):
-  return """<!DOCTYPE html>
+  return templates.TemplateResponse(request, "admin_login.html")
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
