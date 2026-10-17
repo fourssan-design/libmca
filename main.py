@@ -222,6 +222,8 @@ def upload_excel(
     }
   except Exception as e:
     return {"error": str(e)}
+
+
 # ==========================================
 # إدارة الأندية والورشات التكوينية
 # ==========================================
@@ -255,6 +257,20 @@ class WorkshopRegCreate(BaseModel):
   user_age: int
 
 
+class WorkshopCreate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+class WorkshopUpdate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
 # مسار صفحة الأندية والورشات التكوينية للزوار
 @app.get("/workshops", response_class=HTMLResponse)
 def workshops_page(request: Request, db: Session = Depends(get_db)):
@@ -285,14 +301,9 @@ def register_workshop(
   return {
       "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
   }
+
+
 # API لإضافة ورشة جديدة من لوحة التحكم
-class WorkshopCreate(BaseModel):
-  title: str
-  description: str
-  supervisor: str
-  schedule: str
-
-
 @app.post("/api/admin/add-workshop")
 def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   new_workshop = Workshop(
@@ -305,41 +316,36 @@ def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   db.commit()
   return {"message": "تمت إضافة الورشة بنجاح!"}
 
-<!-- جدول إدارة الورشات والأندية الحالية -->
-        <h2 style="margin-top: 30px;">الورشات والأندية المسجلة حالياً</h2>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">عنوان الورشة</th>
-                        <th style="width: 20%;">المشرف</th>
-                        <th style="width: 20%;">الأوقات</th>
-                        <th style="width: 25%;">الوصف</th>
-                        <th style="width: 15%; text-align: center;">إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if workshops %}
-                        {% for w in workshops %}
-                        <tr id="workshop-row-{{ w.id }}">
-                            <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
-                            <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
-                            <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
-                            <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;" rows="2">{{ w.description }}</textarea></td>
-                            <td style="text-align: center; display: flex; gap: 5px; justify-content: center; border: none;">
-                                <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">حفظ</button>
-                                <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">حذف</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
+
+# API لتعديل ورشة موجودة
+@app.put("/api/admin/workshop/{workshop_id}")
+def update_workshop(
+    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  workshop.title = w_data.title
+  workshop.description = w_data.description
+  workshop.supervisor = w_data.supervisor
+  workshop.schedule = w_data.schedule
+
+  db.commit()
+  return {"message": "تم تحديث الورشة بنجاح!"}
+
+
+# API لحذف ورشة
+@app.delete("/api/admin/workshop/{workshop_id}")
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  db.delete(workshop)
+  db.commit()
+  return {"message": "تم حذف الورشة بنجاح!"}
+
 
 # ==========================================
 # نظام حماية لوحة التحكم (Admin Authentication)
@@ -402,8 +408,15 @@ def admin_dashboard(
 
   reservations = db.query(Reservation).all()
   books = db.query(Book).all()
+  workshops = db.query(Workshop).all()  # جلب الورشات لعرضها في لوحة التحكم
   return templates.TemplateResponse(
-      request, "admin.html", {"reservations": reservations, "books": books}
+      request,
+      "admin.html",
+      {
+          "reservations": reservations,
+          "books": books,
+          "workshops": workshops,
+      },
   )
 
 
@@ -413,39 +426,3 @@ def admin_logout():
   resp = RedirectResponse(url="/admin/login", status_code=303)
   resp.delete_cookie(key="admin_session")
   return resp
-# نموذج بيانات لتحديث الورشة
-class WorkshopUpdate(BaseModel):
-  title: str
-  description: str
-  supervisor: str
-  schedule: str
-
-
-# API لتعديل ورشة موجودة
-@app.put("/api/admin/workshop/{workshop_id}")
-def update_workshop(
-    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
-):
-  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
-  workshop.title = w_data.title
-  workshop.description = w_data.description
-  workshop.supervisor = w_data.supervisor
-  workshop.schedule = w_data.schedule
-
-  db.commit()
-  return {"message": "تم تحديث الورشة بنجاح!"}
-
-
-# API لحذف ورشة
-@app.delete("/api/admin/workshop/{workshop_id}")
-def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
-  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
-  db.delete(workshop)
-  db.commit()
-  return {"message": "تم حذف الورشة بنجاح!"}
