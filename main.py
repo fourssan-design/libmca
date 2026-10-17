@@ -376,3 +376,39 @@ def admin_logout():
   resp = RedirectResponse(url="/admin/login", status_code=303)
   resp.delete_cookie(key="admin_session")
   return resp
+# نموذج بيانات لتحديث الورشة
+class WorkshopUpdate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+# API لتعديل ورشة موجودة
+@app.put("/api/admin/workshop/{workshop_id}")
+def update_workshop(
+    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  workshop.title = w_data.title
+  workshop.description = w_data.description
+  workshop.supervisor = w_data.supervisor
+  workshop.schedule = w_data.schedule
+
+  db.commit()
+  return {"message": "تم تحديث الورشة بنجاح!"}
+
+
+# API لحذف ورشة
+@app.delete("/api/admin/workshop/{workshop_id}")
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  db.delete(workshop)
+  db.commit()
+  return {"message": "تم حذف الورشة بنجاح!"}
