@@ -90,6 +90,7 @@
 
         <!-- ================= القسم الأول: المكتبة وحجوزات الكتب ================= -->
         <div id="library-tab" class="tab-content active">
+            <!-- أداة رفع ملفات Excel تم نقلها إلى هنا داخل قسم المكتبة -->
             <div class="admin-section-box">
                 <h3>📥 استيراد وتحديث الكتب عبر ملف Excel</h3>
                 <div class="form-grid">
@@ -255,7 +256,7 @@
 
             let url = `/api/upload-excel?category_name=${encodeURIComponent(categoryInput)}&admin_password=${encodeURIComponent(passwordInput)}`;
 
-            let btn = document.querySelector('.upload-btn');
+            let btn = document.querySelector('.action-btn');
             if(btn) { btn.innerText = 'جاري الرفع...'; btn.disabled = true; }
 
             fetch(url, {
