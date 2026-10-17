@@ -74,6 +74,14 @@ class ReservationCreate(BaseModel):
   user_name: str
   reservation_date: date
 
+class CulturalActivity(Base):
+  __tablename__ = "cultural_activities"
+  id = Column(Integer, primary_key=True, index=True)
+  title = Column(String, index=True)  # اسم النشاط
+  category = Column(String, index=True)  # تصنيف النشاط
+  location = Column(String)  # مكان النشاط
+  date_range = Column(String)  # تاريخ النشاط (من - إلى)
+  partners = Column(String)  # الشركاء في النشاط
 
 # الصفحة الرئيسية للزوار
 @app.get("/", response_class=HTMLResponse)
