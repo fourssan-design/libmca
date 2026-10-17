@@ -250,4 +250,114 @@ def upload_excel(
 ):
   if admin_password != "admin123":
     raise HTTPException(
-        status_code=403, detail="
+        status_code=403, detail="كلمة سر أمين المكتبة غير صحيحة!"
+    )
+
+  try:
+    contents = file.file.read()
+    df = pd.read_excel(io.BytesIO(contents), header=None)
+
+    added_count = 0
+    for index, row in df.iloc[2:].iterrows():
+      b_num = (
+          str(row.iloc[0]).strip()
+          if pd.notna(row.iloc[0]) and str(row.iloc[0]) != "nan"
+          else ""
+      )
+      title = (
+          str(row.iloc[1]).strip()
+          if pd.notna(row.iloc[1]) and str(row.iloc[1]) != "nan"
+          else ""
+      )
+      author = (
+          str(row.iloc[2]).strip()
+          if pd.notna(row.iloc[2]) and str(row.iloc[2]) != "nan"
+          else "غير معروف"
+      )
+      note = (
+          str(row.iloc[3]).strip()
+          if pd.notna(row.iloc[3]) and str(row.iloc[3]) != "nan"
+          else ""
+      )
+
+      if title:
+        full_title = f"{title} ({note})" if note else title
+        book = Book(
+            book_number=b_num,
+            title=full_title,
+            author=author,
+            category=category_name,
+            total_copies=1,
+        )
+        db.add(book)
+        added_count += 1
+
+    db.commit()
+    return {
+        "message": (
+            f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
+        )
+    }
+  except Exception as e:
+    return {"error": str(e)}
+
+
+# ==========================================
+# إدارة الأندية والورشات التكوينية
+# ==========================================
+
+
+class Workshop(Base):
+  __tablename__ = "workshops"
+  id = Column(Integer, primary_key=True, index=True)
+  title = Column(String, index=True)
+  description = Column(String)
+  supervisor = Column(String)
+  schedule = Column(String)
+
+
+class WorkshopRegistration(Base):
+  __tablename__ = "workshop_registrations"
+  id = Column(Integer, primary_key=True, index=True)
+  workshop_id = Column(Integer)
+  user_name = Column(String)
+  user_phone = Column(String)
+  user_age = Column(Integer)
+
+
+Base.metadata.create_all(bind=engine)
+
+
+class WorkshopRegCreate(BaseModel):
+  workshop_id: int
+  user_name: str
+  user_phone: str
+  user_age: int
+
+
+class WorkshopCreate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+class WorkshopUpdate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+# مسار صفحة الأندية والورشات التكوينية للزوار
+@app.get("/workshops", response_class=HTMLResponse)
+def workshops_page(request: Request, db: Session = Depends(get_db)):
+  workshops = db.query(Workshop).all()
+  return templates.TemplateResponse(
+      request, "workshops.html", {"workshops": workshops}
+  )
+
+
+# API لتسجيل المشاركة في الورشة
+@app.post("/api/workshop-register")
+def register_
