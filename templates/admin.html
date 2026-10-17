@@ -67,4 +67,458 @@
             <div class="header-title">
                 <h1>🎛️ لوحة التحكم المركزية - دار الثقافة أدرار</h1>
             </div>
-            <a href="/" class="back-link">ال
+            <a href="/" class="back-link">الذهاب للموقع الرئيسي</a>
+        </div>
+
+        <!-- بطاقات الإحصائيات العامة (5 بطاقات شاملة) -->
+        <div class="analytics-grid">
+            <div class="stat-card">
+                <div class="stat-card-label">حجوزات الكتب</div>
+                <div class="stat-card-num">{{ reservations | length }}</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-card-label">إجمالي الكتب المفهرسة</div>
+                <div class="stat-card-num">{{ books | length }}</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-card-label">الورشات والنوادي</div>
+                <div class="stat-card-num">{{ workshops | length }}</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-card-label">طلبات الانخراط</div>
+                <div class="stat-card-num">{{ registrations | length }}</div>
+            </div>
+            <div class="stat-card cyan">
+                <div class="stat-card-label">الأنشطة الثقافية</div>
+                <div class="stat-card-num">{{ activities | length }}</div>
+            </div>
+        </div>
+
+        <!-- أزرار التبديل بين الأقسام (Tabs Navigation) -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('library', event)">📚 إدارة المكتبة وحجوزات الكتب</button>
+            <button class="tab-btn" onclick="switchTab('workshops', event)">🎨 إعداد وتعديل الورشات</button>
+            <button class="tab-btn" onclick="switchTab('registrations', event)">📋 طلبات الإنخراط والمسجلين</button>
+            <button class="tab-btn" onclick="switchTab('activities', event)">🎭 إدارة الأنشطة الثقافية</button>
+        </div>
+
+        <!-- ================= القسم الأول: المكتبة وحجوزات الكتب ================= -->
+        <div id="library-tab" class="tab-content active">
+            <div class="admin-section-box">
+                <h3>📥 استيراد وتحديث الكتب عبر ملف Excel</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>اختر ملف Excel (.xlsx):</label>
+                        <input type="file" id="excelFile" accept=".xlsx, .xls">
+                    </div>
+                    <div class="form-group">
+                        <label>اسم التصنيف المعرفي:</label>
+                        <input type="text" id="categoryName" placeholder="مثال: تاريخ، أدب...">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة سر أمين المكتبة:</label>
+                        <input type="password" id="adminPassword" placeholder="أدخل كلمة السر">
+                    </div>
+                    <button class="action-btn" onclick="uploadExcelFile()">رفع وإضافة الكتب</button>
+                </div>
+            </div>
+
+            <h2>قائمة طلبات حجز الكتب النشطة</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%; text-align: center;">رقم الطلب</th>
+                            <th style="width: 30%;">اسم المستعير ورقم الهاتف</th>
+                            <th style="width: 35%;">عنوان الكتاب المحجوز</th>
+                            <th style="width: 15%;">رقم الكتاب</th>
+                            <th style="width: 10%;">تاريخ الاستلام</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if reservations %}
+                            {% for r in reservations %}
+                            <tr>
+                                <td class="res-num">{{ r.id }}</td>
+                                <td class="user-info">{{ r.user_name }}</td>
+                                <td class="book-name">
+                                    {% set book = namespace(title='غير معروف') %}
+                                    {% for b in books %}
+                                        {% if b.id == r.book_id %}
+                                            {% set book.title = b.title %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ book.title }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% for b in books %}
+                                        {% if b.id == r.book_id %}{{ b.book_number }}{% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ r.reservation_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات حجز مسجلة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= القسم الثاني: إدارة الورشات والأندية ================= -->
+        <div id="workshops-tab" class="tab-content">
+            <div class="admin-section-box purple">
+                <h3>🎨 إضافة ورشة أو نادي ثقافي جديد</h3>
+                <form id="addWorkshopForm" onsubmit="addNewWorkshop(event)">
+                    <div class="form-grid" style="margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label>عنوان الورشة أو النادي:</label>
+                            <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح" required>
+                        </div>
+                        <div class="form-group">
+                            <label>اسم المشرف:</label>
+                            <input type="text" id="wSupervisor" placeholder="اسم المشرف" required>
+                        </div>
+                        <div class="form-group">
+                            <label>الأوقات وأيام النشاط:</label>
+                            <input type="text" id="wSchedule" placeholder="مثال: الأربعاء 14:00" required>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>وصف الورشة:</label>
+                        <textarea id="wDesc" placeholder="نبذة تعريفية..." required rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="action-btn purple">إضافة الورشة للموقع</button>
+                </form>
+            </div>
+
+            <h2>إدارة وتعديل الورشات والأندية المسجلة حالياً</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">عنوان الورشة</th>
+                            <th style="width: 18%;">المشرف</th>
+                            <th style="width: 18%;">الأوقات</th>
+                            <th style="width: 26%;">الوصف</th>
+                            <th style="width: 18%; text-align: center;">إجراءات التعديل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if workshops %}
+                            {% for w in workshops %}
+                            <tr>
+                                <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;" rows="2">{{ w.description }}</textarea></td>
+                                <td style="text-align: center;">
+                                    <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 4px; width: 100%;">حفظ التعديل</button>
+                                    <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">حذف</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= القسم الثالث: طلبات الإنخراط والمسجلين ================= -->
+        <div id="registrations-tab" class="tab-content">
+            <h2>📋 قائمة طلبات الإنخراط والمسجلين بالورشات والأندية</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%; text-align: center;">رقم التسجيل</th>
+                            <th style="width: 25%;">اسم المشارك</th>
+                            <th style="width: 25%;">الورشة أو النادي المطلوب</th>
+                            <th style="width: 20%;">رقم الهاتف</th>
+                            <th style="width: 20%; text-align: center;">السن</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if registrations %}
+                            {% for reg in registrations %}
+                            <tr>
+                                <td class="res-num">{{ reg.id }}</td>
+                                <td style="font-weight: bold; color: #047857;">{{ reg.user_name }}</td>
+                                <td style="color: #2563eb; font-weight: bold;">
+                                    {% set w_name = namespace(title='ورشة غير معروفة') %}
+                                    {% for w in workshops %}
+                                        {% if w.id == reg.workshop_id %}
+                                            {% set w_name.title = w.title %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ w_name.title }}
+                                </td>
+                                <td>{{ reg.user_phone }}</td>
+                                <td style="text-align: center;">{{ reg.user_age }} سنة</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات انخراط مسجلة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= القسم الرابع: الأنشطة الثقافية ================= -->
+        <div id="activities-tab" class="tab-content">
+            <div class="admin-section-box cyan">
+                <h3>🎭 إضافة نشاط ثقافي جديد</h3>
+                <form id="addActivityForm" onsubmit="addNewActivity(event)">
+                    <div class="form-grid" style="margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label>اسم النشاط:</label>
+                            <input type="text" id="actTitle" placeholder="مثال: أسبوع التراث المحلي" required>
+                        </div>
+                        <div class="form-group">
+                            <label>تصنيف النشاط:</label>
+                            <input type="text" id="actCategory" placeholder="مثال: مهرجان، معرض، ندوات..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>مكان النشاط:</label>
+                            <input type="text" id="actLocation" placeholder="مثال: قاعة المحاضرات الكبرى" required>
+                        </div>
+                    </div>
+                    <div class="form-grid" style="margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label>تاريخ النشاط (من - إلى):</label>
+                            <input type="text" id="actDate" placeholder="مثال: من 2026-05-10 إلى 2026-05-15" required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>الشركاء في النشاط:</label>
+                            <input type="text" id="actPartners" placeholder="مثال: مديرية الثقافة، جمعية كذا..." required>
+                        </div>
+                    </div>
+                    <button type="submit" class="action-btn cyan">حفظ وإضافة النشاط</button>
+                </form>
+            </div>
+
+            <h2>قائمة الأنشطة الثقافية المسجلة</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 8%; text-align: center;">الرقم</th>
+                            <th style="width: 20%;">اسم النشاط</th>
+                            <th style="width: 15%;">التصنيف</th>
+                            <th style="width: 15%;">المكان</th>
+                            <th style="width: 17%;">التاريخ (من - إلى)</th>
+                            <th style="width: 15%;">الشركاء</th>
+                            <th style="width: 10%; text-align: center;">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if activities %}
+                            {% for act in activities %}
+                            <tr>
+                                <td class="res-num">{{ act.id }}</td>
+                                <td><input type="text" id="edit-act-title-{{ act.id }}" value="{{ act.title }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                                <td><input type="text" id="edit-act-cat-{{ act.id }}" value="{{ act.category }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                                <td><input type="text" id="edit-act-loc-{{ act.id }}" value="{{ act.location }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                                <td><input type="text" id="edit-act-date-{{ act.id }}" value="{{ act.date_range }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                                <td><input type="text" id="edit-act-part-{{ act.id }}" value="{{ act.partners }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                                <td style="text-align: center;">
+                                    <button onclick="updateActivity({{ act.id }})" style="background-color: #2563eb; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-bottom: 3px; width: 100%;">حفظ</button>
+                                    <button onclick="deleteActivity({{ act.id }})" style="background-color: #e11d48; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; width: 100%;">حذف</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #666; padding: 20px;">لا توجد أي أنشطة ثقافية مضافة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (tabName === 'library') {
+                document.getElementById('library-tab').classList.add('active');
+            } else if (tabName === 'workshops') {
+                document.getElementById('workshops-tab').classList.add('active');
+            } else if (tabName === 'registrations') {
+                document.getElementById('registrations-tab').classList.add('active');
+            } else if (tabName === 'activities') {
+                document.getElementById('activities-tab').classList.add('active');
+            }
+            event.currentTarget.classList.add('active');
+        }
+
+        function uploadExcelFile() {
+            let fileInput = document.getElementById('excelFile');
+            let categoryInput = document.getElementById('categoryName').value.trim();
+            let passwordInput = document.getElementById('adminPassword').value;
+
+            if (fileInput.files.length === 0) {
+                alert('الرجاء اختيار ملف Excel أولاً!');
+                return;
+            }
+            if (!categoryInput) {
+                alert('الرجاء إدخال اسم التصنيف المعرفي!');
+                return;
+            }
+            if (!passwordInput) {
+                alert('الرجاء إدخال كلمة سر أمين المكتبة!');
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            let url = `/api/upload-excel?category_name=${encodeURIComponent(categoryInput)}&admin_password=${encodeURIComponent(passwordInput)}`;
+
+            let btn = document.querySelector('#library-tab .action-btn');
+            if(btn) { btn.innerText = 'جاري الرفع...'; btn.disabled = true; }
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload(); 
+                } else {
+                    alert(data.error || 'حدث خطأ أثناء رفع الملف.');
+                    if(btn) { btn.innerText = 'رفع وإضافة الكتب'; btn.disabled = false; }
+                }
+            })
+            .catch(err => {
+                alert('حدث خطأ في الاتصال بالخادم.');
+                if(btn) { btn.innerText = 'رفع وإضافة الكتب'; btn.disabled = false; }
+            });
+        }
+
+        function addNewWorkshop(event) {
+            event.preventDefault();
+            let title = document.getElementById('wTitle').value.trim();
+            let supervisor = document.getElementById('wSupervisor').value.trim();
+            let schedule = document.getElementById('wSchedule').value.trim();
+            let description = document.getElementById('wDesc').value.trim();
+
+            fetch('/api/admin/add-workshop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, supervisor, schedule, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تمت إضافة الورشة بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء إضافة الورشة."));
+        }
+
+        function updateWorkshop(id) {
+            let title = document.getElementById(`edit-title-${id}`).value.trim();
+            let supervisor = document.getElementById(`edit-supervisor-${id}`).value.trim();
+            let schedule = document.getElementById(`edit-schedule-${id}`).value.trim();
+            let description = document.getElementById(`edit-desc-${id}`).value.trim();
+
+            fetch(`/api/admin/workshop/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, supervisor, schedule, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم التعديل بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء تعديل الورشة."));
+        }
+
+        function deleteWorkshop(id) {
+            if (!confirm("هل أنت متأكد من رغبتك في حذف هذه الورشة؟")) return;
+
+            fetch(`/api/admin/workshop/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم الحذف بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء حذف الورشة."));
+        }
+
+        // دوال الأنشطة الثقافية
+        function addNewActivity(event) {
+            event.preventDefault();
+            let title = document.getElementById('actTitle').value.trim();
+            let category = document.getElementById('actCategory').value.trim();
+            let location = document.getElementById('actLocation').value.trim();
+            let date_range = document.getElementById('actDate').value.trim();
+            let partners = document.getElementById('actPartners').value.trim();
+
+            fetch('/api/admin/add-activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, category, location, date_range, partners })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تمت إضافة النشاط بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء إضافة النشاط."));
+        }
+
+        function updateActivity(id) {
+            let title = document.getElementById(`edit-act-title-${id}`).value.trim();
+            let category = document.getElementById(`edit-act-cat-${id}`).value.trim();
+            let location = document.getElementById(`edit-act-loc-${id}`).value.trim();
+            let date_range = document.getElementById(`edit-act-date-${id}`).value.trim();
+            let partners = document.getElementById(`edit-act-part-${id}`).value.trim();
+
+            fetch(`/api/admin/activity/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, category, location, date_range, partners })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم التعديل بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء تعديل النشاط."));
+        }
+
+        function deleteActivity(id) {
+            if (!confirm("هل أنت متأكد من رغبتك في حذف هذا النشاط الثقافي؟")) return;
+
+            fetch(`/api/admin/activity/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم الحذف بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء حذف النشاط."));
+        }
+    </script>
+</body>
+</html>
