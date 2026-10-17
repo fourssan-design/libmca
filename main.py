@@ -407,4 +407,7 @@ def update_workshop(
   workshop.title = w_data.title
   workshop.description = w_data.description
   workshop.supervisor = w_data.supervisor
-  workshop.schedule =
+  workshop.schedule = w_data.schedule  # <--- تأكد من إضافة هذا الجزء المكتمل تماماً
+
+  db.commit()
+  return {"message": "تم تحديث الورشة بنجاح!"}
