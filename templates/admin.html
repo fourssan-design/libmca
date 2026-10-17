@@ -29,13 +29,11 @@
         .form-group label { font-size: 13px; font-weight: bold; color: #334155; }
         .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; background: white; }
         .upload-btn { background-color: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; height: 41px; }
-        .upload-btn:hover { background-color: #059669; }
 
         /* قسم إضافة الورشات */
         .workshop-admin-section { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
         .workshop-admin-section h3 { margin-top: 0; color: #1e293b; font-size: 16px; border-right: 4px solid #8b5cf6; padding-right: 8px; }
         .workshop-btn { background-color: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .workshop-btn:hover { background-color: #7c3aed; }
 
         h2 { color: #1e293b; font-size: 18px; margin-top: 0; border-right: 4px solid #2563eb; padding-right: 10px; }
 
@@ -47,13 +45,6 @@
         .res-num { color: #64748b; text-align: center; }
         .user-info { font-weight: bold; color: #047857; }
         .book-name { color: #1d4ed8; font-weight: bold; }
-
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .container { padding: 15px; }
-            .header-title h1 { font-size: 16px; }
-            .back-link { font-size: 12px; padding: 6px 10px; }
-        }
     </style>
 </head>
 <body>
@@ -61,7 +52,7 @@
         <!-- ترويسة لوحة التحكم -->
         <div class="header-section">
             <div class="header-title">
-                <h1>🛠️ لوحة تحكم أمين المكتبة - إدارة الفهارس والحجوزات</h1>
+                <h1>🛠️ لوحة تحكم أمين المكتبة - إدارة الفهارس والورشات</h1>
             </div>
             <a href="/" class="back-link">الذهاب للفهارس الرئيسية</a>
         </div>
@@ -77,8 +68,8 @@
                 <div class="stat-card-num">{{ books | length }}</div>
             </div>
             <div class="stat-card purple">
-                <div class="stat-card-label">التصنيفات المعرفية</div>
-                <div class="stat-card-num">54</div>
+                <div class="stat-card-label">الورشات والأندية النشطة</div>
+                <div class="stat-card-num">{{ workshops | length }}</div>
             </div>
         </div>
 
@@ -92,7 +83,7 @@
                 </div>
                 <div class="form-group">
                     <label>اسم التصنيف المعرفي:</label>
-                    <input type="text" id="categoryName" placeholder="مثال: تاريخ، أدب، علوم...">
+                    <input type="text" id="categoryName" placeholder="مثال: تاريخ، أدب...">
                 </div>
                 <div class="form-group">
                     <label>كلمة سر أمين المكتبة:</label>
@@ -109,26 +100,62 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px;">
                     <div class="form-group">
                         <label>عنوان الورشة أو النادي:</label>
-                        <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح وفن التمثيل" required>
+                        <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح" required>
                     </div>
                     <div class="form-group">
                         <label>اسم المشرف:</label>
-                        <input type="text" id="wSupervisor" placeholder="اسم المشرف أو المؤطر" required>
+                        <input type="text" id="wSupervisor" placeholder="اسم المشرف" required>
                     </div>
                     <div class="form-group">
                         <label>الأوقات وأيام النشاط:</label>
-                        <input type="text" id="wSchedule" placeholder="مثال: الأربعاء والسبت 14:00" required>
+                        <input type="text" id="wSchedule" placeholder="مثال: الأربعاء 14:00" required>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>وصف الورشة:</label>
-                    <textarea id="wDesc" placeholder="اكتب نبذة تعريفية قصيرة عن الورشة أو النادي..." required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; background: white; box-sizing: border-box; font-family: Tahoma, sans-serif;" rows="2"></textarea>
+                    <textarea id="wDesc" placeholder="نبذة تعريفية..." required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; box-sizing: border-box;" rows="2"></textarea>
                 </div>
                 <button type="submit" class="workshop-btn">إضافة الورشة للموقع</button>
             </form>
         </div>
 
-        <h2>قائمة طلبات حجز الكتب النشطة</h2>
+        <!-- جدول إدارة وتعديل الورشات الحالية -->
+        <h2>إدارة الورشات والأندية المسجلة حالياً</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">عنوان الورشة</th>
+                        <th style="width: 18%;">المشرف</th>
+                        <th style="width: 18%;">الأوقات</th>
+                        <th style="width: 26%;">الوصف</th>
+                        <th style="width: 18%; text-align: center;">إجراءات التعديل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if workshops %}
+                        {% for w in workshops %}
+                        <tr>
+                            <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                            <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                            <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                            <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;" rows="2">{{ w.description }}</textarea></td>
+                            <td style="text-align: center;">
+                                <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 4px; width: 100%;">حفظ التعديل</button>
+                                <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">حذف</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <h2 style="margin-top: 30px;">قائمة طلبات حجز الكتب النشطة</h2>
 
         <!-- جدول عرض الحجوزات -->
         <div class="table-responsive">
@@ -243,6 +270,39 @@
                 location.reload();
             })
             .catch(err => alert("حدث خطأ أثناء إضافة الورشة."));
+        }
+
+        function updateWorkshop(id) {
+            let title = document.getElementById(`edit-title-${id}`).value.trim();
+            let supervisor = document.getElementById(`edit-supervisor-${id}`).value.trim();
+            let schedule = document.getElementById(`edit-schedule-${id}`).value.trim();
+            let description = document.getElementById(`edit-desc-${id}`).value.trim();
+
+            fetch(`/api/admin/workshop/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, supervisor, schedule, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم التعديل بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء تعديل الورشة."));
+        }
+
+        function deleteWorkshop(id) {
+            if (!confirm("هل أنت متأكد من رغبتك في حذف هذه الورشة؟")) return;
+
+            fetch(`/api/admin/workshop/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم الحذف بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء حذف الورشة."));
         }
     </script>
 </body>
