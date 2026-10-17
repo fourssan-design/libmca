@@ -124,3 +124,213 @@
                     </thead>
                     <tbody>
                         {% if reservations %}
+                            {% for r in reservations %}
+                            <tr>
+                                <td class="res-num">{{ r.id }}</td>
+                                <td class="user-info">{{ r.user_name }}</td>
+                                <td class="book-name">
+                                    {% set book = namespace(title='غير معروف') %}
+                                    {% for b in books %}
+                                        {% if b.id == r.book_id %}
+                                            {% set book.title = b.title %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ book.title }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% for b in books %}
+                                        {% if b.id == r.book_id %}{{ b.book_number }}{% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ r.reservation_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات حجز مسجلة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= القسم الثاني: الورشات والأندية التكوينية ================= -->
+        <div id="workshops-tab" class="tab-content">
+            <div class="admin-section-box purple">
+                <h3>🎨 إضافة ورشة أو نادي ثقافي جديد</h3>
+                <form id="addWorkshopForm" onsubmit="addNewWorkshop(event)">
+                    <div class="form-grid" style="margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label>عنوان الورشة أو النادي:</label>
+                            <input type="text" id="wTitle" placeholder="مثال: ورشة المسرح" required>
+                        </div>
+                        <div class="form-group">
+                            <label>اسم المشرف:</label>
+                            <input type="text" id="wSupervisor" placeholder="اسم المشرف" required>
+                        </div>
+                        <div class="form-group">
+                            <label>الأوقات وأيام النشاط:</label>
+                            <input type="text" id="wSchedule" placeholder="مثال: الأربعاء 14:00" required>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>وصف الورشة:</label>
+                        <textarea id="wDesc" placeholder="نبذة تعريفية..." required rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="action-btn purple">إضافة الورشة للموقع</button>
+                </form>
+            </div>
+
+            <h2>إدارة وتعديل الورشات والأندية المسجلة حالياً</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">عنوان الورشة</th>
+                            <th style="width: 18%;">المشرف</th>
+                            <th style="width: 18%;">الأوقات</th>
+                            <th style="width: 26%;">الوصف</th>
+                            <th style="width: 18%; text-align: center;">إجراءات التعديل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if workshops %}
+                            {% for w in workshops %}
+                            <tr>
+                                <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;"></td>
+                                <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;" rows="2">{{ w.description }}</textarea></td>
+                                <td style="text-align: center;">
+                                    <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 4px; width: 100%;">حفظ التعديل</button>
+                                    <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;">حذف</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // دالة التبديل بين الأقسام (Tabs)
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (tabName === 'library') {
+                document.getElementById('library-tab').classList.add('active');
+            } else if (tabName === 'workshops') {
+                document.getElementById('workshops-tab').classList.add('active');
+            }
+            event.currentTarget.classList.add('active');
+        }
+
+        function uploadExcelFile() {
+            let fileInput = document.getElementById('excelFile');
+            let categoryInput = document.getElementById('categoryName').value.trim();
+            let passwordInput = document.getElementById('adminPassword').value;
+
+            if (fileInput.files.length === 0) {
+                alert('الرجاء اختيار ملف Excel أولاً!');
+                return;
+            }
+            if (!categoryInput) {
+                alert('الرجاء إدخال اسم التصنيف المعرفي!');
+                return;
+            }
+            if (!passwordInput) {
+                alert('الرجاء إدخال كلمة سر أمين المكتبة!');
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            let url = `/api/upload-excel?category_name=${encodeURIComponent(categoryInput)}&admin_password=${encodeURIComponent(passwordInput)}`;
+
+            let btn = document.querySelector('#library-tab .action-btn');
+            if(btn) { btn.innerText = 'جاري الرفع...'; btn.disabled = true; }
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload(); 
+                } else {
+                    alert(data.error || 'حدث خطأ أثناء رفع الملف.');
+                    if(btn) { btn.innerText = 'رفع وإضافة الكتب'; btn.disabled = false; }
+                }
+            })
+            .catch(err => {
+                alert('حدث خطأ في الاتصال بالخادم.');
+                if(btn) { btn.innerText = 'رفع وإضافة الكتب'; btn.disabled = false; }
+            });
+        }
+
+        function addNewWorkshop(event) {
+            event.preventDefault();
+            let title = document.getElementById('wTitle').value.trim();
+            let supervisor = document.getElementById('wSupervisor').value.trim();
+            let schedule = document.getElementById('wSchedule').value.trim();
+            let description = document.getElementById('wDesc').value.trim();
+
+            fetch('/api/admin/add-workshop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, supervisor, schedule, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تمت إضافة الورشة بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء إضافة الورشة."));
+        }
+
+        function updateWorkshop(id) {
+            let title = document.getElementById(`edit-title-${id}`).value.trim();
+            let supervisor = document.getElementById(`edit-supervisor-${id}`).value.trim();
+            let schedule = document.getElementById(`edit-schedule-${id}`).value.trim();
+            let description = document.getElementById(`edit-desc-${id}`).value.trim();
+
+            fetch(`/api/admin/workshop/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, supervisor, schedule, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم التعديل بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء تعديل الورشة."));
+        }
+
+        function deleteWorkshop(id) {
+            if (!confirm("هل أنت متأكد من رغبتك في حذف هذه الورشة؟")) return;
+
+            fetch(`/api/admin/workshop/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "تم الحذف بنجاح!");
+                location.reload();
+            })
+            .catch(err => alert("حدث خطأ أثناء حذف الورشة."));
+        }
+    </script>
+</body>
+</html>
