@@ -61,11 +61,11 @@ class Reservation(Base):
 class CulturalActivity(Base):
   __tablename__ = "cultural_activities"
   id = Column(Integer, primary_key=True, index=True)
-  title = Column(String, index=True)  # اسم النشاط
-  category = Column(String, index=True)  # تصنيف النشاط
-  location = Column(String)  # مكان النشاط
-  date_range = Column(String)  # تاريخ النشاط (من - إلى)
-  partners = Column(String)  # الشركاء في النشاط
+  title = Column(String, index=True)
+  category = Column(String, index=True)
+  location = Column(String)
+  date_range = Column(String)
+  partners = Column(String)
 
 
 Base.metadata.create_all(bind=engine)
@@ -163,9 +163,7 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   db.commit()
   db.refresh(new_res)
   return {
-      "message": (
-          "تم تسجيل طلب حجز الكتاب بنجاح! سيتم التواصل معك عند جاهزيته."
-      ),
+      "message": "تم تسجيل طلب حجز الكتاب بنجاح! سيتم التواصل معك عند جاهزيته.",
       "reservation_id": new_res.id,
       "date": str(new_res.reservation_date),
   }
@@ -274,3 +272,164 @@ def upload_excel(
       author = (
           str(row.iloc[2]).strip()
           if pd.notna(row.iloc[2]) and str(row.iloc[2]) != "nan"
+          else "غير معروف"
+      )
+      note = (
+          str(row.iloc[3]).strip()
+          if pd.notna(row.iloc[3]) and str(row.iloc[3]) != "nan"
+          else ""
+      )
+
+      if title:
+        full_title = f"{title} ({note})" if note else title
+        book = Book(
+            book_number=b_num,
+            title=full_title,
+            author=author,
+            category=category_name,
+            total_copies=1,
+        )
+        db.add(book)
+        added_count += 1
+
+    db.commit()
+    return {
+        "message": (
+            f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
+        )
+    }
+  except Exception as e:
+    return {"error": str(e)}
+
+
+# ==========================================
+# إدارة الأندية والورشات التكوينية
+# ==========================================
+
+
+class Workshop(Base):
+  __tablename__ = "workshops"
+  id = Column(Integer, primary_key=True, index=True)
+  title = Column(String, index=True)
+  description = Column(String)
+  supervisor = Column(String)
+  schedule = Column(String)
+
+
+class WorkshopRegistration(Base):
+  __tablename__ = "workshop_registrations"
+  id = Column(Integer, primary_key=True, index=True)
+  workshop_id = Column(Integer)
+  user_name = Column(String)
+  user_phone = Column(String)
+  user_age = Column(Integer)
+
+
+Base.metadata.create_all(bind=engine)
+
+
+class WorkshopRegCreate(BaseModel):
+  workshop_id: int
+  user_name: str
+  user_phone: str
+  user_age: int
+
+
+class WorkshopCreate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+class WorkshopUpdate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+# مسار صفحة الأندية والورشات التكوينية للزوار
+@app.get("/workshops", response_class=HTMLResponse)
+def workshops_page(request: Request, db: Session = Depends(get_db)):
+  workshops = db.query(Workshop).all()
+  return templates.TemplateResponse(
+      request, "workshops.html", {"workshops": workshops}
+  )
+
+
+# API لتسجيل المشاركة في الورشة
+@app.post("/api/workshop-register")
+def register_workshop(
+    reg: WorkshopRegCreate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == reg.workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  new_reg = WorkshopRegistration(
+      workshop_id=reg.workshop_id,
+      user_name=reg.user_name,
+      user_phone=reg.user_phone,
+      user_age=reg.user_age,
+  )
+  db.add(new_reg)
+  db.commit()
+  db.refresh(new_reg)
+  return {
+      "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
+  }
+
+
+# API لإضافة ورشة جديدة من لوحة التحكم
+@app.post("/api/admin/add-workshop")
+def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
+  new_workshop = Workshop(
+      title=w_data.title,
+      description=w_data.description,
+      supervisor=w_data.supervisor,
+      schedule=w_data.schedule,
+  )
+  db.add(new_workshop)
+  db.commit()
+  return {"message": "تمت إضافة الورشة بنجاح!"}
+
+
+# API لتعديل ورشة موجودة
+@app.put("/api/admin/workshop/{workshop_id}")
+def update_workshop(
+    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  workshop.title = w_data.title
+  workshop.description = w_data.description
+  workshop.supervisor = w_data.supervisor
+  workshop.schedule = w_data.schedule
+
+  db.commit()
+  return {"message": "تم تحديث الورشة بنجاح!"}
+
+
+# API لحذف ورشة
+@app.delete("/api/admin/workshop/{workshop_id}")
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  db.delete(workshop)
+  db.commit()
+  return {"message": "تم حذف الورشة بنجاح!"}
+
+
+# ==========================================
+# نظام حماية لوحة التحكم (Admin Authentication)
+# ==========================================
+
+
+# صفحة تسجيل الدخول للوحة التحكم
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin
