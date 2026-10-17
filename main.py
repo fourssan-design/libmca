@@ -58,6 +58,16 @@ class Reservation(Base):
   reservation_date = Column(Date)
 
 
+class CulturalActivity(Base):
+  __tablename__ = "cultural_activities"
+  id = Column(Integer, primary_key=True, index=True)
+  title = Column(String, index=True)  # اسم النشاط
+  category = Column(String, index=True)  # تصنيف النشاط
+  location = Column(String)  # مكان النشاط
+  date_range = Column(String)  # تاريخ النشاط (من - إلى)
+  partners = Column(String)  # الشركاء في النشاط
+
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -74,14 +84,22 @@ class ReservationCreate(BaseModel):
   user_name: str
   reservation_date: date
 
-class CulturalActivity(Base):
-  __tablename__ = "cultural_activities"
-  id = Column(Integer, primary_key=True, index=True)
-  title = Column(String, index=True)  # اسم النشاط
-  category = Column(String, index=True)  # تصنيف النشاط
-  location = Column(String)  # مكان النشاط
-  date_range = Column(String)  # تاريخ النشاط (من - إلى)
-  partners = Column(String)  # الشركاء في النشاط
+
+class ActivityCreate(BaseModel):
+  title: str
+  category: str
+  location: str
+  date_range: str
+  partners: str
+
+
+class ActivityUpdate(BaseModel):
+  title: str
+  category: str
+  location: str
+  date_range: str
+  partners: str
+
 
 # الصفحة الرئيسية للزوار
 @app.get("/", response_class=HTMLResponse)
@@ -170,6 +188,60 @@ def get_reservations(db: Session = Depends(get_db)):
   return results
 
 
+# API لإضافة نشاط ثقافي جديد
+@app.post("/api/admin/add-activity")
+def add_activity(a_data: ActivityCreate, db: Session = Depends(get_db)):
+  new_activity = CulturalActivity(
+      title=a_data.title,
+      category=a_data.category,
+      location=a_data.location,
+      date_range=a_data.date_range,
+      partners=a_data.partners,
+  )
+  db.add(new_activity)
+  db.commit()
+  return {"message": "تمت إضافة النشاط الثقافي بنجاح!"}
+
+
+# API لتعديل نشاط ثقافي
+@app.put("/api/admin/activity/{activity_id}")
+def update_activity(
+    activity_id: int, a_data: ActivityUpdate, db: Session = Depends(get_db)
+):
+  activity = (
+      db.query(CulturalActivity)
+      .filter(CulturalActivity.id == activity_id)
+      .first()
+  )
+  if not activity:
+    raise HTTPException(status_code=404, detail="النشاط غير موجود")
+
+  activity.title = a_data.title
+  activity.category = a_data.category
+  activity.location = a_data.location
+  activity.date_range = a_data.date_range
+  activity.partners = a_data.partners
+
+  db.commit()
+  return {"message": "تم تحديث النشاط بنجاح!"}
+
+
+# API لحذف نشاط ثقافي
+@app.delete("/api/admin/activity/{activity_id}")
+def delete_activity(activity_id: int, db: Session = Depends(get_db)):
+  activity = (
+      db.query(CulturalActivity)
+      .filter(CulturalActivity.id == activity_id)
+      .first()
+  )
+  if not activity:
+    raise HTTPException(status_code=404, detail="النشاط غير موجود")
+
+  db.delete(activity)
+  db.commit()
+  return {"message": "تم حذف النشاط بنجاح!"}
+
+
 # API استيراد الكتب من ملفات Excel مع حماية بكلمة السر
 @app.post("/api/upload-excel")
 def upload_excel(
@@ -202,238 +274,3 @@ def upload_excel(
       author = (
           str(row.iloc[2]).strip()
           if pd.notna(row.iloc[2]) and str(row.iloc[2]) != "nan"
-          else "غير معروف"
-      )
-      note = (
-          str(row.iloc[3]).strip()
-          if pd.notna(row.iloc[3]) and str(row.iloc[3]) != "nan"
-          else ""
-      )
-
-      if title:
-        full_title = f"{title} ({note})" if note else title
-        book = Book(
-            book_number=b_num,
-            title=full_title,
-            author=author,
-            category=category_name,
-            total_copies=1,
-        )
-        db.add(book)
-        added_count += 1
-
-    db.commit()
-    return {
-        "message": (
-            f"تمت إضافة {added_count} كتاباً في تصنيف '{category_name}' بنجاح!"
-        )
-    }
-  except Exception as e:
-    return {"error": str(e)}
-
-
-# ==========================================
-# إدارة الأندية والورشات التكوينية
-# ==========================================
-
-
-class Workshop(Base):
-  __tablename__ = "workshops"
-  id = Column(Integer, primary_key=True, index=True)
-  title = Column(String, index=True)
-  description = Column(String)
-  supervisor = Column(String)
-  schedule = Column(String)
-
-
-class WorkshopRegistration(Base):
-  __tablename__ = "workshop_registrations"
-  id = Column(Integer, primary_key=True, index=True)
-  workshop_id = Column(Integer)
-  user_name = Column(String)
-  user_phone = Column(String)
-  user_age = Column(Integer)
-
-
-Base.metadata.create_all(bind=engine)
-
-
-class WorkshopRegCreate(BaseModel):
-  workshop_id: int
-  user_name: str
-  user_phone: str
-  user_age: int
-
-
-class WorkshopCreate(BaseModel):
-  title: str
-  description: str
-  supervisor: str
-  schedule: str
-
-
-class WorkshopUpdate(BaseModel):
-  title: str
-  description: str
-  supervisor: str
-  schedule: str
-
-
-# مسار صفحة الأندية والورشات التكوينية للزوار
-@app.get("/workshops", response_class=HTMLResponse)
-def workshops_page(request: Request, db: Session = Depends(get_db)):
-  workshops = db.query(Workshop).all()
-  return templates.TemplateResponse(
-      request, "workshops.html", {"workshops": workshops}
-  )
-
-
-# API لتسجيل المشاركة في الورشة
-@app.post("/api/workshop-register")
-def register_workshop(
-    reg: WorkshopRegCreate, db: Session = Depends(get_db)
-):
-  workshop = db.query(Workshop).filter(Workshop.id == reg.workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
-  new_reg = WorkshopRegistration(
-      workshop_id=reg.workshop_id,
-      user_name=reg.user_name,
-      user_phone=reg.user_phone,
-      user_age=reg.user_age,
-  )
-  db.add(new_reg)
-  db.commit()
-  db.refresh(new_reg)
-  return {
-      "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
-  }
-
-
-# API لإضافة ورشة جديدة من لوحة التحكم
-@app.post("/api/admin/add-workshop")
-def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
-  new_workshop = Workshop(
-      title=w_data.title,
-      description=w_data.description,
-      supervisor=w_data.supervisor,
-      schedule=w_data.schedule,
-  )
-  db.add(new_workshop)
-  db.commit()
-  return {"message": "تمت إضافة الورشة بنجاح!"}
-
-
-# API لتعديل ورشة موجودة
-@app.put("/api/admin/workshop/{workshop_id}")
-def update_workshop(
-    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
-):
-  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
-  workshop.title = w_data.title
-  workshop.description = w_data.description
-  workshop.supervisor = w_data.supervisor
-  workshop.schedule = w_data.schedule
-
-  db.commit()
-  return {"message": "تم تحديث الورشة بنجاح!"}
-
-
-# API لحذف ورشة
-@app.delete("/api/admin/workshop/{workshop_id}")
-def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
-  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
-  db.delete(workshop)
-  db.commit()
-  return {"message": "تم حذف الورشة بنجاح!"}
-
-
-# ==========================================
-# نظام حماية لوحة التحكم (Admin Authentication)
-# ==========================================
-
-
-# صفحة تسجيل الدخول للوحة التحكم
-@app.get("/admin/login", response_class=HTMLResponse)
-def admin_login_page(request: Request):
-  return """
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head>
-        <meta charset="UTF-8">
-        <title>تسجيل دخول أمين المكتبة</title>
-        <style>
-            body { font-family: Tahoma, sans-serif; background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; direction: rtl; }
-            .login-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 350px; text-align: center; }
-            .login-card h2 { color: #881337; margin-bottom: 20px; font-size: 20px; }
-            .login-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
-            .login-card button { width: 100%; background-color: #e11d48; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px; }
-            .login-card button:hover { background-color: #be123c; }
-        </style>
-    </head>
-    <body>
-        <div class="login-card">
-            <h2>🔒 بوابة أمين المكتبة</h2>
-            <form action="/admin/login" method="POST">
-                <input type="password" name="password" placeholder="أدخل كلمة سر أمين المكتبة" required>
-                <button type="submit">دخول لوحة التحكم</button>
-            </form>
-        </div>
-    </body>
-    </html>
-    """
-
-
-# التحقق من كلمة السر ومنح صلاحية الجلسة
-@app.post("/admin/login")
-def admin_login(response: Response, password: str = Form(...)):
-  if password != "admin123":
-    return RedirectResponse(url="/admin/login", status_code=303)
-
-  resp = RedirectResponse(url="/admin", status_code=303)
-  resp.set_cookie(
-      key="admin_session", value="authenticated", httponly=True, max_age=86400
-  )
-  return resp
-
-
-# مسار لوحة التحكم المحمي (يتطلب كلمة السر)
-@app.get("/admin", response_class=HTMLResponse)
-def admin_dashboard(
-    request: Request,
-    db: Session = Depends(get_db),
-    admin_session: Optional[str] = Cookie(None),
-):
-  if admin_session != "authenticated":
-    return RedirectResponse(url="/admin/login", status_code=303)
-
-  reservations = db.query(Reservation).all()
-  books = db.query(Book).all()
-  workshops = db.query(Workshop).all()
-  registrations = db.query(WorkshopRegistration).all()
-
-  return templates.TemplateResponse(
-      request,
-      "admin.html",
-      {
-          "reservations": reservations,
-          "books": books,
-          "workshops": workshops,
-          "registrations": registrations,
-      },
-  )
-
-
-# زر لتسجيل الخروج
-@app.get("/admin/logout")
-def admin_logout():
-  resp = RedirectResponse(url="/admin/login", status_code=303)
-  resp.delete_cookie(key="admin_session")
-  return resp
