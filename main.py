@@ -429,14 +429,58 @@ def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
 # نظام حماية لوحة التحكم (Admin Authentication)
 # ==========================================
 
+
 # صفحة تسجيل الدخول للوحة التحكم
 @app.get("/admin/login", response_class=HTMLResponse)
 def admin_login_page(request: Request):
   return templates.TemplateResponse(request, "admin_login.html")
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>تسجيل دخول أمين المكتبة</title>
-    <style>
-        body { font-family: Tahoma, sans-serif; background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; direction: rtl; }
-        .login-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 350px
+
+
+# التحقق من كلمة السر ومنح صلاحية الجلسة
+@app.post("/admin/login")
+def admin_login(response: Response, password: str = Form(...)):
+  if password != "admin123":
+    return RedirectResponse(url="/admin/login", status_code=303)
+
+  resp = RedirectResponse(url="/admin", status_code=303)
+  resp.set_cookie(
+      key="admin_session", value="authenticated", httponly=True, max_age=86400
+  )
+  return resp
+
+
+# مسار لوحة التحكم المحمي (يتطلب كلمة السر)
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin_session: Optional[str] = Cookie(None),
+):
+  if admin_session != "authenticated":
+    return RedirectResponse(url="/admin/login", status_code=303)
+
+  reservations = db.query(Reservation).all()
+  books = db.query(Book).all()
+  workshops = db.query(Workshop).all()
+  registrations = db.query(WorkshopRegistration).all()
+  activities = db.query(CulturalActivity).all()
+
+  return templates.TemplateResponse(
+      request,
+      "admin.html",
+      {
+          "reservations": reservations,
+          "books": books,
+          "workshops": workshops,
+          "registrations": registrations,
+          "activities": activities,
+      },
+  )
+
+
+# زر لتسجيل الخروج
+@app.get("/admin/logout")
+def admin_logout():
+  resp = RedirectResponse(url="/admin/login", status_code=303)
+  resp.delete_cookie(key="admin_session")
+  return resp
