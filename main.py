@@ -429,13 +429,14 @@ def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
 # نظام حماية لوحة التحكم (Admin Authentication)
 # ==========================================
 
-
 # صفحة تسجيل الدخول للوحة التحكم
 @app.get("/admin/login", response_class=HTMLResponse)
 def admin_login_page(request: Request):
-  return """
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head>
-        <meta charset="UTF-8">
-        <title>
+  return """<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل دخول أمين المكتبة</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; direction: rtl; }
+        .login-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 350px
