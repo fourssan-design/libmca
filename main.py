@@ -360,4 +360,51 @@ def workshops_page(request: Request, db: Session = Depends(get_db)):
 
 # API لتسجيل المشاركة في الورشة
 @app.post("/api/workshop-register")
-def register_
+def register_workshop(
+    reg: WorkshopRegCreate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == reg.workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  new_reg = WorkshopRegistration(
+      workshop_id=reg.workshop_id,
+      user_name=reg.user_name,
+      user_phone=reg.user_phone,
+      user_age=reg.user_age,
+  )
+  db.add(new_reg)
+  db.commit()
+  db.refresh(new_reg)
+  return {
+      "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
+  }
+
+
+# API لإضافة ورشة جديدة من لوحة التحكم
+@app.post("/api/admin/add-workshop")
+def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
+  new_workshop = Workshop(
+      title=w_data.title,
+      description=w_data.description,
+      supervisor=w_data.supervisor,
+      schedule=w_data.schedule,
+  )
+  db.add(new_workshop)
+  db.commit()
+  return {"message": "تمت إضافة الورشة بنجاح!"}
+
+
+# API لتعديل ورشة موجودة
+@app.put("/api/admin/workshop/{workshop_id}")
+def update_workshop(
+    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
+):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+
+  workshop.title = w_data.title
+  workshop.description = w_data.description
+  workshop.supervisor = w_data.supervisor
+  workshop.schedule =
