@@ -304,27 +304,4 @@ def register_workshop(
 
 
 # API لإضافة ورشة جديدة من لوحة التحكم
-@app.post("/api/admin/add-workshop")
-def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
-  new_workshop = Workshop(
-      title=w_data.title,
-      description=w_data.description,
-      supervisor=w_data.supervisor,
-      schedule=w_data.schedule,
-  )
-  db.add(new_workshop)
-  db.commit()
-  return {"message": "تمت إضافة الورشة بنجاح!"}
-
-
-# API لتعديل ورشة موجودة
-@app.put("/api/admin/workshop/{workshop_id}")
-def update_workshop(
-    workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
-):
-  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
-  workshop.title = w_data.title
-  workshop.description = w_data.
+@app.post("/api/
