@@ -304,6 +304,43 @@ def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   db.add(new_workshop)
   db.commit()
   return {"message": "تمت إضافة الورشة بنجاح!"}
+
+<!-- جدول إدارة الورشات والأندية الحالية -->
+        <h2 style="margin-top: 30px;">الورشات والأندية المسجلة حالياً</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">عنوان الورشة</th>
+                        <th style="width: 20%;">المشرف</th>
+                        <th style="width: 20%;">الأوقات</th>
+                        <th style="width: 25%;">الوصف</th>
+                        <th style="width: 15%; text-align: center;">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if workshops %}
+                        {% for w in workshops %}
+                        <tr id="workshop-row-{{ w.id }}">
+                            <td><input type="text" id="edit-title-{{ w.id }}" value="{{ w.title }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                            <td><input type="text" id="edit-supervisor-{{ w.id }}" value="{{ w.supervisor }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                            <td><input type="text" id="edit-schedule-{{ w.id }}" value="{{ w.schedule }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;"></td>
+                            <td><textarea id="edit-desc-{{ w.id }}" style="width:100%; padding:5px; border:1px solid #cbd5e1; border-radius:4px;" rows="2">{{ w.description }}</textarea></td>
+                            <td style="text-align: center; display: flex; gap: 5px; justify-content: center; border: none;">
+                                <button onclick="updateWorkshop({{ w.id }})" style="background-color: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">حفظ</button>
+                                <button onclick="deleteWorkshop({{ w.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">حذف</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي ورشات مضافة حتى الآن.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
 # ==========================================
 # نظام حماية لوحة التحكم (Admin Authentication)
 # ==========================================
