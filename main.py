@@ -13,7 +13,7 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
@@ -25,14 +25,11 @@ from sqlalchemy.orm import Session, sessionmaker
 # 1. إعداد التطبيق
 app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
 
-# ربط المجلد الحالي لخدمة الملفات الثابتة (الصور)
 app.mount("/static", StaticFiles(directory="."), name="static")
-
 templates = Jinja2Templates(directory="templates")
 
-# 2. إعداد قاعدة البيانات المحلية SQLite
+# 2. إعداد قاعدة البيانات
 SQLALCHEMY_DATABASE_URL = "sqlite:///./library.db"
-
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
@@ -68,6 +65,24 @@ class CulturalActivity(Base):
   partners = Column(String)
 
 
+class Workshop(Base):
+  __tablename__ = "workshops"
+  id = Column(Integer, primary_key=True, index=True)
+  title = Column(String, index=True)
+  description = Column(String)
+  supervisor = Column(String)
+  schedule = Column(String)
+
+
+class WorkshopRegistration(Base):
+  __tablename__ = "workshop_registrations"
+  id = Column(Integer, primary_key=True, index=True)
+  workshop_id = Column(Integer)
+  user_name = Column(String)
+  user_phone = Column(String)
+  user_age = Column(Integer)
+
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -101,14 +116,34 @@ class ActivityUpdate(BaseModel):
   partners: str
 
 
-# الصفحة الرئيسية للزوار
+class WorkshopRegCreate(BaseModel):
+  workshop_id: int
+  user_name: str
+  user_phone: str
+  user_age: int
+
+
+class WorkshopCreate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+class WorkshopUpdate(BaseModel):
+  title: str
+  description: str
+  supervisor: str
+  schedule: str
+
+
+# الصفحات العامة والـ APIs
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
   books = db.query(Book).limit(50).all()
   return templates.TemplateResponse(request, "index.html", {"books": books})
 
 
-# API للبحث عن الكتب
 @app.get("/api/books")
 def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   if query:
@@ -127,14 +162,11 @@ def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   return books
 
 
-# API لجلب الكتب حسب التصنيف المحدد
 @app.get("/api/books/category/{category_name}")
 def get_books_by_category(category_name: str, db: Session = Depends(get_db)):
-  books = db.query(Book).filter(Book.category == category_name).all()
-  return books
+  return db.query(Book).filter(Book.category == category_name).all()
 
 
-# API لإحصائيات قاعدة البيانات والتصنيفات
 @app.get("/api/stats")
 def get_database_stats(db: Session = Depends(get_db)):
   total_books = db.query(Book).count()
@@ -147,13 +179,11 @@ def get_database_stats(db: Session = Depends(get_db)):
   }
 
 
-# API لتسجيل حجز جديد
 @app.post("/api/reserve")
 def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   book = db.query(Book).filter(Book.id == reservation.book_id).first()
   if not book:
     raise HTTPException(status_code=404, detail="الكتاب غير موجود")
-
   new_res = Reservation(
       book_id=reservation.book_id,
       user_name=reservation.user_name,
@@ -163,18 +193,15 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   db.commit()
   db.refresh(new_res)
   return {
-      "message": "تم تسجيل طلب حجز الكتاب بنجاح! سيتم التواصل معك عند جاهزيته.",
+      "message": "تم تسجيل طلب حجز الكتاب بنجاح!",
       "reservation_id": new_res.id,
-      "date": str(new_res.reservation_date),
   }
 
 
-# API لعرض الحجوزات
 @app.get("/api/reservations")
 def get_reservations(db: Session = Depends(get_db)):
   results = []
-  reservations = db.query(Reservation).all()
-  for r in reservations:
+  for r in db.query(Reservation).all():
     book = db.query(Book).filter(Book.id == r.book_id).first()
     results.append({
         "reservation_id": r.id,
@@ -186,7 +213,6 @@ def get_reservations(db: Session = Depends(get_db)):
   return results
 
 
-# API لإضافة نشاط ثقافي جديد
 @app.post("/api/admin/add-activity")
 def add_activity(a_data: ActivityCreate, db: Session = Depends(get_db)):
   new_activity = CulturalActivity(
@@ -200,9 +226,8 @@ def add_activity(a_data: ActivityCreate, db: Session = Depends(get_db)):
   db.commit()
   db.refresh(new_activity)
   return {"message": "تمت إضافة النشاط الثقافي بنجاح!"}
-    )
 
-# API لتعديل نشاط ثقافي
+
 @app.put("/api/admin/activity/{activity_id}")
 def update_activity(
     activity_id: int, a_data: ActivityUpdate, db: Session = Depends(get_db)
@@ -214,18 +239,15 @@ def update_activity(
   )
   if not activity:
     raise HTTPException(status_code=404, detail="النشاط غير موجود")
-
   activity.title = a_data.title
   activity.category = a_data.category
   activity.location = a_data.location
   activity.date_range = a_data.date_range
   activity.partners = a_data.partners
-
   db.commit()
   return {"message": "تم تحديث النشاط بنجاح!"}
 
 
-# API لحذف نشاط ثقافي
 @app.delete("/api/admin/activity/{activity_id}")
 def delete_activity(activity_id: int, db: Session = Depends(get_db)):
   activity = (
@@ -235,13 +257,11 @@ def delete_activity(activity_id: int, db: Session = Depends(get_db)):
   )
   if not activity:
     raise HTTPException(status_code=404, detail="النشاط غير موجود")
-
   db.delete(activity)
   db.commit()
   return {"message": "تم حذف النشاط بنجاح!"}
 
 
-# API استيراد الكتب من ملفات Excel مع حماية بكلمة السر
 @app.post("/api/upload-excel")
 def upload_excel(
     category_name: str = "تاريخ",
@@ -253,11 +273,9 @@ def upload_excel(
     raise HTTPException(
         status_code=403, detail="كلمة سر أمين المكتبة غير صحيحة!"
     )
-
   try:
     contents = file.file.read()
     df = pd.read_excel(io.BytesIO(contents), header=None)
-
     added_count = 0
     for index, row in df.iloc[2:].iterrows():
       b_num = (
@@ -280,7 +298,6 @@ def upload_excel(
           if pd.notna(row.iloc[3]) and str(row.iloc[3]) != "nan"
           else ""
       )
-
       if title:
         full_title = f"{title} ({note})" if note else title
         book = Book(
@@ -292,7 +309,6 @@ def upload_excel(
         )
         db.add(book)
         added_count += 1
-
     db.commit()
     return {
         "message": (
@@ -302,54 +318,7 @@ def upload_excel(
   except Exception as e:
     return {"error": str(e)}
 
-# ==========================================
-# إدارة الأندية والورشات التكوينية
-# ==========================================
 
-
-class Workshop(Base):
-  __tablename__ = "workshops"
-  id = Column(Integer, primary_key=True, index=True)
-  title = Column(String, index=True)
-  description = Column(String)
-  supervisor = Column(String)
-  schedule = Column(String)
-
-
-class WorkshopRegistration(Base):
-  __tablename__ = "workshop_registrations"
-  id = Column(Integer, primary_key=True, index=True)
-  workshop_id = Column(Integer)
-  user_name = Column(String)
-  user_phone = Column(String)
-  user_age = Column(Integer)
-
-
-Base.metadata.create_all(bind=engine)
-
-
-class WorkshopRegCreate(BaseModel):
-  workshop_id: int
-  user_name: str
-  user_phone: str
-  user_age: int
-
-
-class WorkshopCreate(BaseModel):
-  title: str
-  description: str
-  supervisor: str
-  schedule: str
-
-
-class WorkshopUpdate(BaseModel):
-  title: str
-  description: str
-  supervisor: str
-  schedule: str
-
-
-# مسار صفحة الأندية والورشات التكوينية للزوار
 @app.get("/workshops", response_class=HTMLResponse)
 def workshops_page(request: Request, db: Session = Depends(get_db)):
   workshops = db.query(Workshop).all()
@@ -358,7 +327,6 @@ def workshops_page(request: Request, db: Session = Depends(get_db)):
   )
 
 
-# API لتسجيل المشاركة في الورشة
 @app.post("/api/workshop-register")
 def register_workshop(
     reg: WorkshopRegCreate, db: Session = Depends(get_db)
@@ -366,7 +334,6 @@ def register_workshop(
   workshop = db.query(Workshop).filter(Workshop.id == reg.workshop_id).first()
   if not workshop:
     raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
   new_reg = WorkshopRegistration(
       workshop_id=reg.workshop_id,
       user_name=reg.user_name,
@@ -375,13 +342,9 @@ def register_workshop(
   )
   db.add(new_reg)
   db.commit()
-  db.refresh(new_reg)
-  return {
-      "message": "تم تسجيل طلب الانخراط في الورشة بنجاح! سنتواصل معك قريباً."
-  }
+  return {"message": "تم تسجيل طلب الانخراط في الورشة بنجاح!"}
 
 
-# API لإضافة ورشة جديدة من لوحة التحكم
 @app.post("/api/admin/add-workshop")
 def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   new_workshop = Workshop(
@@ -395,7 +358,6 @@ def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   return {"message": "تمت إضافة الورشة بنجاح!"}
 
 
-# API لتعديل ورشة موجودة
 @app.put("/api/admin/workshop/{workshop_id}")
 def update_workshop(
     workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
@@ -403,45 +365,34 @@ def update_workshop(
   workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
   if not workshop:
     raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
   workshop.title = w_data.title
   workshop.description = w_data.description
   workshop.supervisor = w_data.supervisor
   workshop.schedule = w_data.schedule
-
   db.commit()
   return {"message": "تم تحديث الورشة بنجاح!"}
 
 
-# API لحذف ورشة
 @app.delete("/api/admin/workshop/{workshop_id}")
 def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
   workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
   if not workshop:
     raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-
   db.delete(workshop)
   db.commit()
   return {"message": "تم حذف الورشة بنجاح!"}
 
 
-# ==========================================
-# نظام حماية لوحة التحكم (Admin Authentication)
-# ==========================================
-
-
-# صفحة تسجيل الدخول للوحة التحكم
+# مسارات لوحة التحكم وتسجيل الدخول
 @app.get("/admin/login", response_class=HTMLResponse)
 def admin_login_page(request: Request):
   return templates.TemplateResponse(request, "admin_login.html")
 
 
-# التحقق من كلمة السر ومنح صلاحية الجلسة
 @app.post("/admin/login")
 def admin_login(response: Response, password: str = Form(...)):
   if password != "admin123":
     return RedirectResponse(url="/admin/login", status_code=303)
-
   resp = RedirectResponse(url="/admin", status_code=303)
   resp.set_cookie(
       key="admin_session", value="authenticated", httponly=True, max_age=86400
@@ -449,7 +400,6 @@ def admin_login(response: Response, password: str = Form(...)):
   return resp
 
 
-# مسار لوحة التحكم المحمي (يتطلب كلمة السر)
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
@@ -458,48 +408,33 @@ def admin_dashboard(
 ):
   if admin_session != "authenticated":
     return RedirectResponse(url="/admin/login", status_code=303)
-
-  reservations = db.query(Reservation).all()
-  books = db.query(Book).all()
-  workshops = db.query(Workshop).all()
-  registrations = db.query(WorkshopRegistration).all()
-  activities = db.query(CulturalActivity).all()
-
   return templates.TemplateResponse(
       request,
       "admin.html",
       {
-          "reservations": reservations,
-          "books": books,
-          "workshops": workshops,
-          "registrations": registrations,
-          "activities": activities,
+          "reservations": db.query(Reservation).all(),
+          "books": db.query(Book).all(),
+          "workshops": db.query(Workshop).all(),
+          "registrations": db.query(WorkshopRegistration).all(),
+          "activities": db.query(CulturalActivity).all(),
       },
   )
 
 
-# زر لتسجيل الخروج
-@app.get("/admin/logout")
-def admin_logout():
-  resp = RedirectResponse(url="/admin/login", status_code=303)
-  resp.delete_cookie(key="admin_session")
-  return resp
-
-from fastapi.responses import FileResponse
-
-
-# مسار لتحميل أحدث نسخة من قاعدة البيانات
 @app.get("/admin/download-db")
 def download_database(admin_session: Optional[str] = Cookie(None)):
   if admin_session != "authenticated":
     return RedirectResponse(url="/admin/login", status_code=303)
-
   db_path = "library.db"
   if os.path.exists(db_path):
     return FileResponse(
         db_path, media_type="application/octet-stream", filename="library.db"
     )
-  else:
-    raise HTTPException(
-        status_code=404, detail="ملف قاعدة البيانات غير موجود."
-    )
+  raise HTTPException(status_code=404, detail="ملف قاعدة البيانات غير موجود.")
+
+
+@app.get("/admin/logout")
+def admin_logout():
+  resp = RedirectResponse(url="/admin/login", status_code=303)
+  resp.delete_cookie(key="admin_session")
+  return resp
