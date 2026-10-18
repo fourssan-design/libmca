@@ -465,18 +465,18 @@
         }
 
         // دوال الأنشطة الثقافية
-        function addNewActivity(event) {
+function addNewActivity(event) {
             event.preventDefault();
-            let title = document.getElementById('actTitle').value.trim();
-            let category = document.getElementById('actCategory').value.trim();
-            let location = document.getElementById('actLocation').value.trim();
-            let date_range = document.getElementById('actDate').value.trim();
-            let partners = document.getElementById('actPartners').value.trim();
+            let formData = new FormData();
+            formData.append('title', document.getElementById('actTitle').value.trim());
+            formData.append('category', document.getElementById('actCategory').value.trim());
+            formData.append('location', document.getElementById('actLocation').value.trim());
+            formData.append('date_range', document.getElementById('actDate').value.trim());
+            formData.append('partners', document.getElementById('actPartners').value.trim());
 
             fetch('/api/admin/add-activity', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, category, location, date_range, partners })
+                body: formData
             })
             .then(res => res.json())
             .then(data => {
