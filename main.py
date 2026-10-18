@@ -392,6 +392,13 @@ def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
   db.commit()
   return {"message": "تم حذف الورشة بنجاح!"}
 
+# صفحة عرض برنامج الأنشطة الثقافية والفنية للجمهور
+@app.get("/program", response_class=HTMLResponse)
+def cultural_program_page(request: Request, db: Session = Depends(get_db)):
+  activities = db.query(CulturalActivity).all()
+  return templates.TemplateResponse(
+      request, "activities_program.html", {"activities": activities}
+  )
 
 # مسارات لوحة التحكم وتسجيل الدخول
 @app.get("/admin/login", response_class=HTMLResponse)
