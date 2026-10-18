@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>برنامج الأنشطة الثقافية والفنية - دار الثقافة أدرار</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; direction: rtl; color: #333; }
+        .header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header h1 { margin: 0 0 10px; font-size: 26px; }
+        .header p { margin: 0; font-size: 15px; opacity: 0.9; }
+        
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        
+        .nav-links { margin-bottom: 25px; text-align: left; }
+        .home-btn { background-color: #10b981; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: bold; }
+        .home-btn:hover { background-color: #059669; }
+
+        .activities-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        
+        .activity-card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-right: 5px solid #2563eb; padding: 20px; transition: transform 0.2s, box-shadow 0.2s; }
+        .activity-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        
+        .activity-card.festival { border-right-color: #f59e0b; }
+        .activity-card.exhibition { border-right-color: #10b981; }
+        .activity-card.seminar { border-right-color: #8b5cf6; }
+
+        .act-category { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+        .activity-title { font-size: 18px; font-weight: bold; color: #1e293b; margin: 0 0 12px; }
+        
+        .act-info { font-size: 14px; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .act-info strong { color: #475569; }
+
+        .no-activities { text-align: center; background: white; padding: 40px; border-radius: 10px; color: #666; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        footer { text-align: center; padding: 20px; color: #888; font-size: 13px; margin-top: 50px; border-top: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎭 برنامج الأنشطة الثقافية والفنية</h1>
+        <p>دار الثقافة محمد بلخير - أدرار</p>
+    </div>
+
+    <div class="container">
+        <div class="nav-links">
+            <a href="/" class="home-btn">← العودة للموقع الرئيسي</a>
+        </div>
+
+        {% if activities %}
+            <div class="activities-grid">
+                {% for act in activities %}
+                <div class="activity-card">
+                    <span class="act-category">{{ act.category }}</span>
+                    <h3 class="activity-title">{{ act.title }}</h3>
+                    
+                    <div class="act-info">
+                        <span>📍 <strong>المكان:</strong> {{ act.location }}</span>
+                    </div>
+                    <div class="act-info">
+                        <span>📅 <strong>التاريخ:</strong> {{ act.date_range }}</span>
+                    </div>
+                    <div class="act-info">
+                        <span>🤝 <strong>الشركاء:</strong> {{ act.partners }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-activities">
+                <p>لا توجد أنشطة ثقافية مبرمجة حالياً. يرجى العودة لاحقاً!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة © دار الثقافة أدرار 2026
+    </footer>
+
+</body>
+</html>
