@@ -186,20 +186,32 @@ def get_reservations(db: Session = Depends(get_db)):
   return results
 
 
-# API لإضافة نشاط ثقافي جديد
+# API لإضافة نشاط ثقافي جديد (يدعم استقبال البيانات كنموذج HTML)
 @app.post("/api/admin/add-activity")
-def add_activity(a_data: ActivityCreate, db: Session = Depends(get_db)):
-  new_activity = CulturalActivity(
-      title=a_data.title,
-      category=a_data.category,
-      location=a_data.location,
-      date_range=a_data.date_range,
-      partners=a_data.partners,
-  )
-  db.add(new_activity)
-  db.commit()
-  return {"message": "تمت إضافة النشاط الثقافي بنجاح!"}
-
+def add_activity(
+    title: str = Form(...),
+    category: str = Form(...),
+    location: str = Form(...),
+    date_range: str = Form(...),
+    partners: str = Form(...),
+    db: Session = Depends(get_db),
+):
+  try:
+    new_activity = CulturalActivity(
+        title=title,
+        category=category,
+        location=location,
+        date_range=date_range,
+        partners=partners,
+    )
+    db.add(new_activity)
+    db.commit()
+    db.refresh(new_activity)
+    return {"message": "تمت إضافة النشاط الثقافي بنجاح!"}
+  except Exception as e:
+    raise HTTPException(
+        status_code=400, detail=f"خطأ أثناء الحفظ: {str(e)}"
+    )
 
 # API لتعديل نشاط ثقافي
 @app.put("/api/admin/activity/{activity_id}")
