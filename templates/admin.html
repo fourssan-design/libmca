@@ -233,87 +233,40 @@
 
         <!-- ================= القسم الثالث: طلبات الإنخراط والمسجلين ================= -->
         <div id="registrations-tab" class="tab-content">
-            <h2>⏳ طلبات الإنخراط المعلقة في انتظار التأكيد</h2>
-            <div class="table-responsive" style="margin-bottom: 30px;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 8%; text-align: center;">الرقم</th>
-                            <th style="width: 22%;">اسم المشارك</th>
-                            <th style="width: 22%;">الورشة المطلوبة</th>
-                            <th style="width: 15%;">رقم الهاتف</th>
-                            <th style="width: 10%; text-align: center;">السن</th>
-                            <th style="width: 23%; text-align: center;">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% set pending_regs = registrations | selectattr("status", "equalto", "pending") | list %}
-                        {% if pending_regs %}
-                            {% for reg in pending_regs %}
-                            <tr>
-                                <td class="res-num">{{ reg.id }}</td>
-                                <td style="font-weight: bold; color: #b45309;">{{ reg.user_name }}</td>
-                                <td style="color: #2563eb; font-weight: bold;">
-                                    {% set w_name = namespace(title='ورشة غير معروفة') %}
-                                    {% for w in workshops %}
-                                        {% if w.id == reg.workshop_id %}{% set w_name.title = w.title %}{% endif %}
-                                    {% endfor %}
-                                    {{ w_name.title }}
-                                </td>
-                                <td>{{ reg.user_phone }}</td>
-                                <td style="text-align: center;">{{ reg.user_age }} سنة</td>
-                                <td style="text-align: center; display: flex; gap: 5px; justify-content: center;">
-                                    <button onclick="confirmRegistration({{ reg.id }})" style="background-color: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">تأكيد التسجيل</button>
-                                    <button onclick="deleteRegistration({{ reg.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">رفض/حذف</button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="6" style="text-align: center; color: #666; padding: 15px;">لا توجد طلبات انخراط معلقة حالياً.</td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-
-            <h2 style="border-right-color: #10b981;">✅ قائمة المسجلين فعلياً في الورشات والأندية</h2>
+            <h2>📋 قائمة طلبات الإنخراط والمسجلين بالورشات والأندية</h2>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 8%; text-align: center;">الرقم</th>
+                            <th style="width: 10%; text-align: center;">رقم التسجيل</th>
                             <th style="width: 25%;">اسم المشارك</th>
-                            <th style="width: 25%;">الورشة المقبول فيها</th>
-                            <th style="width: 17%;">رقم الهاتف</th>
-                            <th style="width: 10%; text-align: center;">السن</th>
-                            <th style="width: 15%; text-align: center;">إجراء</th>
+                            <th style="width: 25%;">الورشة أو النادي المطلوب</th>
+                            <th style="width: 20%;">رقم الهاتف</th>
+                            <th style="width: 20%; text-align: center;">السن</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% set confirmed_regs = registrations | selectattr("status", "equalto", "confirmed") | list %}
-                        {% if confirmed_regs %}
-                            {% for reg in confirmed_regs %}
+                        {% if registrations %}
+                            {% for reg in registrations %}
                             <tr>
                                 <td class="res-num">{{ reg.id }}</td>
                                 <td style="font-weight: bold; color: #047857;">{{ reg.user_name }}</td>
                                 <td style="color: #2563eb; font-weight: bold;">
                                     {% set w_name = namespace(title='ورشة غير معروفة') %}
                                     {% for w in workshops %}
-                                        {% if w.id == reg.workshop_id %}{% set w_name.title = w.title %}{% endif %}
+                                        {% if w.id == reg.workshop_id %}
+                                            {% set w_name.title = w.title %}
+                                        {% endif %}
                                     {% endfor %}
                                     {{ w_name.title }}
                                 </td>
                                 <td>{{ reg.user_phone }}</td>
                                 <td style="text-align: center;">{{ reg.user_age }} سنة</td>
-                                <td style="text-align: center;">
-                                    <button onclick="deleteRegistration({{ reg.id }})" style="background-color: #e11d48; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">إلغاء التسجيل</button>
-                                </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" style="text-align: center; color: #666; padding: 15px;">لم يتم تأكيد أي مسجل فعلي حتى الآن.</td>
+                                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">لا توجد أي طلبات انخراط مسجلة حتى الآن.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -511,33 +464,8 @@
             .catch(err => alert("حدث خطأ أثناء حذف الورشة."));
         }
 
-        function confirmRegistration(id) {
-            fetch(`/api/admin/workshop-registration/${id}/confirm`, {
-                method: 'PUT'
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message || "تم تأكيد التسجيل بنجاح!");
-                location.reload();
-            })
-            .catch(err => alert("حدث خطأ أثناء تأكيد التسجيل."));
-        }
-
-        function deleteRegistration(id) {
-            if (!confirm("هل أنت متأكد من رغبتك في حذف طلب الانخراط هذا؟")) return;
-
-            fetch(`/api/admin/workshop-registration/${id}`, {
-                method: 'DELETE'
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message || "تم الحذف بنجاح!");
-                location.reload();
-            })
-            .catch(err => alert("حدث خطأ أثناء حذف طلب الانخراط."));
-        }
-
-        function addNewActivity(event) {
+        // دوال الأنشطة الثقافية
+function addNewActivity(event) {
             event.preventDefault();
             let formData = new FormData();
             formData.append('title', document.getElementById('actTitle').value.trim());
