@@ -418,34 +418,4 @@ def update_workshop(
 
 
 @app.delete("/api/admin/workshop/{workshop_id}")
-def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
-  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
-  if not workshop:
-    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
-  db.delete(workshop)
-  db.commit()
-  return {"message": "تم حذف الورشة بنجاح!"}
-
-
-# صفحة عرض برنامج الأنشطة الثقافية والفنية للجمهور
-@app.get("/program", response_class=HTMLResponse)
-def cultural_program_page(request: Request, db: Session = Depends(get_db)):
-  activities = db.query(CulturalActivity).all()
-  return templates.TemplateResponse(
-      request, "activities_program.html", {"activities": activities}
-  )
-
-
-# مسارات لوحة التحكم وتسجيل الدخول
-@app.get("/admin/login", response_class=HTMLResponse)
-def admin_login_page(request: Request):
-  return templates.TemplateResponse(request, "admin_login.html")
-
-
-@app.post("/admin/login")
-def admin_login(response: Response, password: str = Form(...)):
-  if password != "admin123":
-    return RedirectResponse(url="/admin/login", status_code=303)
-  resp = RedirectResponse(url="/admin", status_code=303)
-  resp.set_cookie(
-      key="admin_session", value="authenticated", httponly=True, max_age=
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db
