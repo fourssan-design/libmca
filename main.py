@@ -418,4 +418,10 @@ def update_workshop(
 
 
 @app.delete("/api/admin/workshop/{workshop_id}")
-def delete_workshop(workshop_id: int, db: Session = Depends(get_db
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+  workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
+  if not workshop:
+    raise HTTPException(status_code=404, detail="الورشة غير موجودة")
+  db.delete(workshop)
+  db.commit()
+  return {"message": "تم حذف الورشة بنجاح!"}
