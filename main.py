@@ -2,10 +2,10 @@ import io
 import os
 from datetime import date
 from typing import Optional
-from fastapi import (
+from fastWorkshopRegistration import (
     Cookie,
     Depends,
-    FastAPI,
+    FastWorkshopRegistration,
     File,
     Form,
     HTTPException,
@@ -13,9 +13,9 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastWorkshopRegistration.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastWorkshopRegistration.staticfiles import StaticFiles
+from fastWorkshopRegistration.templating import Jinja2Templates
 import pandas as pd
 from pydantic import BaseModel
 from sqlalchemy import Column, Date, Integer, String, create_engine
@@ -23,7 +23,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
 # 1. إعداد التطبيق
-app = FastAPI(title="نظام مكتبة دار الثقافة - أدرار")
+app = FastWorkshopRegistration(title="نظام مكتبة دار الثقافة - أدرار")
 
 app.mount("/static", StaticFiles(directory="."), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -81,6 +81,9 @@ class WorkshopRegistration(Base):
   user_name = Column(String)
   user_phone = Column(String)
   user_age = Column(Integer)
+  status = Column(
+      String, default="pending"
+  )  # 'pending' للطلبات الجديدة، 'confirmed' للمسجلين فعلياً
 
 
 Base.metadata.create_all(bind=engine)
@@ -136,15 +139,30 @@ class WorkshopUpdate(BaseModel):
   supervisor: str
   schedule: str
 
+# WorkshopRegistration لتأكيد تسجيل المشارك في الورشة
+@app.put("/WorkshopRegistration/admin/workshop-registration/{reg_id}/confirm")
+def confirm_workshop_registration(reg_id: int, db: Session = Depends(get_db)):
+  reg = (
+      db.query(WorkshopRegistration)
+      .filter(WorkshopRegistration.id == reg_id)
+      .first()
+  )
+  if not reg:
+    raise HTTPException(status_code=404, detail="طلب الانخراط غير موجود")
 
-# الصفحات العامة والـ APIs
+  reg.status = "confirmed"
+  db.commit()
+  return {"message": "تم تأكيد تسجيل المشارك وإضافته للمسجلين فعلياً!"}
+
+
+# الصفحات العامة والـ WorkshopRegistrations
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
   books = db.query(Book).limit(50).all()
   return templates.TemplateResponse(request, "index.html", {"books": books})
 
 
-@app.get("/api/books")
+@app.get("/WorkshopRegistration/books")
 def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   if query:
     books = (
@@ -162,12 +180,12 @@ def search_books(query: Optional[str] = None, db: Session = Depends(get_db)):
   return books
 
 
-@app.get("/api/books/category/{category_name}")
+@app.get("/WorkshopRegistration/books/category/{category_name}")
 def get_books_by_category(category_name: str, db: Session = Depends(get_db)):
   return db.query(Book).filter(Book.category == category_name).all()
 
 
-@app.get("/api/stats")
+@app.get("/WorkshopRegistration/stats")
 def get_database_stats(db: Session = Depends(get_db)):
   total_books = db.query(Book).count()
   categories = db.query(Book.category).distinct().all()
@@ -179,7 +197,7 @@ def get_database_stats(db: Session = Depends(get_db)):
   }
 
 
-@app.post("/api/reserve")
+@app.post("/WorkshopRegistration/reserve")
 def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   book = db.query(Book).filter(Book.id == reservation.book_id).first()
   if not book:
@@ -198,7 +216,7 @@ def reserve_book(reservation: ReservationCreate, db: Session = Depends(get_db)):
   }
 
 
-@app.get("/api/reservations")
+@app.get("/WorkshopRegistration/reservations")
 def get_reservations(db: Session = Depends(get_db)):
   results = []
   for r in db.query(Reservation).all():
@@ -213,7 +231,7 @@ def get_reservations(db: Session = Depends(get_db)):
   return results
 
 
-@app.post("/api/admin/add-activity")
+@app.post("/WorkshopRegistration/admin/add-activity")
 def add_activity(
     title: str = Form(...),
     category: str = Form(...),
@@ -238,7 +256,7 @@ def add_activity(
     raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.put("/api/admin/activity/{activity_id}")
+@app.put("/WorkshopRegistration/admin/activity/{activity_id}")
 def update_activity(
     activity_id: int, a_data: ActivityUpdate, db: Session = Depends(get_db)
 ):
@@ -258,7 +276,7 @@ def update_activity(
   return {"message": "تم تحديث النشاط بنجاح!"}
 
 
-@app.delete("/api/admin/activity/{activity_id}")
+@app.delete("/WorkshopRegistration/admin/activity/{activity_id}")
 def delete_activity(activity_id: int, db: Session = Depends(get_db)):
   activity = (
       db.query(CulturalActivity)
@@ -272,7 +290,7 @@ def delete_activity(activity_id: int, db: Session = Depends(get_db)):
   return {"message": "تم حذف النشاط بنجاح!"}
 
 
-@app.post("/api/upload-excel")
+@app.post("/WorkshopRegistration/upload-excel")
 def upload_excel(
     category_name: str = "تاريخ",
     admin_password: str = "",
@@ -337,7 +355,7 @@ def workshops_page(request: Request, db: Session = Depends(get_db)):
   )
 
 
-@app.post("/api/workshop-register")
+@app.post("/WorkshopRegistration/workshop-register")
 def register_workshop(
     reg: WorkshopRegCreate, db: Session = Depends(get_db)
 ):
@@ -355,7 +373,7 @@ def register_workshop(
   return {"message": "تم تسجيل طلب الانخراط في الورشة بنجاح!"}
 
 
-@app.post("/api/admin/add-workshop")
+@app.post("/WorkshopRegistration/admin/add-workshop")
 def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   new_workshop = Workshop(
       title=w_data.title,
@@ -368,7 +386,7 @@ def add_workshop(w_data: WorkshopCreate, db: Session = Depends(get_db)):
   return {"message": "تمت إضافة الورشة بنجاح!"}
 
 
-@app.put("/api/admin/workshop/{workshop_id}")
+@app.put("/WorkshopRegistration/admin/workshop/{workshop_id}")
 def update_workshop(
     workshop_id: int, w_data: WorkshopUpdate, db: Session = Depends(get_db)
 ):
@@ -383,7 +401,7 @@ def update_workshop(
   return {"message": "تم تحديث الورشة بنجاح!"}
 
 
-@app.delete("/api/admin/workshop/{workshop_id}")
+@app.delete("/WorkshopRegistration/admin/workshop/{workshop_id}")
 def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
   workshop = db.query(Workshop).filter(Workshop.id == workshop_id).first()
   if not workshop:
