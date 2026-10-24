@@ -81,9 +81,6 @@ class WorkshopRegistration(Base):
   user_name = Column(String)
   user_phone = Column(String)
   user_age = Column(Integer)
-  status = Column(
-      String, default="pending"
-  )  # 'pending' للطلبات الجديدة، 'confirmed' للمسجلين فعلياً
 
 
 Base.metadata.create_all(bind=engine)
@@ -138,37 +135,6 @@ class WorkshopUpdate(BaseModel):
   description: str
   supervisor: str
   schedule: str
-
-
-# تأكيد تسجيل المشارك في الورشة
-@app.put("/api/admin/workshop-registration/{reg_id}/confirm")
-def confirm_workshop_registration(reg_id: int, db: Session = Depends(get_db)):
-  reg = (
-      db.query(WorkshopRegistration)
-      .filter(WorkshopRegistration.id == reg_id)
-      .first()
-  )
-  if not reg:
-    raise HTTPException(status_code=404, detail="طلب الانخراط غير موجود")
-
-  reg.status = "confirmed"
-  db.commit()
-  return {"message": "تم تأكيد تسجيل المشارك وإضافته للمسجلين فعلياً!"}
-
-
-# حذف طلب انخراط
-@app.delete("/api/admin/workshop-registration/{reg_id}")
-def delete_workshop_registration(reg_id: int, db: Session = Depends(get_db)):
-  reg = (
-      db.query(WorkshopRegistration)
-      .filter(WorkshopRegistration.id == reg_id)
-      .first()
-  )
-  if not reg:
-    raise HTTPException(status_code=404, detail="طلب الانخراط غير موجود")
-  db.delete(reg)
-  db.commit()
-  return {"message": "تم حذف طلب الانخراط بنجاح!"}
 
 
 # الصفحات العامة والـ APIs
@@ -425,3 +391,67 @@ def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
   db.delete(workshop)
   db.commit()
   return {"message": "تم حذف الورشة بنجاح!"}
+
+# صفحة عرض برنامج الأنشطة الثقافية والفنية للجمهور
+@app.get("/program", response_class=HTMLResponse)
+def cultural_program_page(request: Request, db: Session = Depends(get_db)):
+  activities = db.query(CulturalActivity).all()
+  return templates.TemplateResponse(
+      request, "activities_program.html", {"activities": activities}
+  )
+
+# مسارات لوحة التحكم وتسجيل الدخول
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin_login_page(request: Request):
+  return templates.TemplateResponse(request, "admin_login.html")
+
+
+@app.post("/admin/login")
+def admin_login(response: Response, password: str = Form(...)):
+  if password != "admin123":
+    return RedirectResponse(url="/admin/login", status_code=303)
+  resp = RedirectResponse(url="/admin", status_code=303)
+  resp.set_cookie(
+      key="admin_session", value="authenticated", httponly=True, max_age=86400
+  )
+  return resp
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin_session: Optional[str] = Cookie(None),
+):
+  if admin_session != "authenticated":
+    return RedirectResponse(url="/admin/login", status_code=303)
+  return templates.TemplateResponse(
+      request,
+      "admin.html",
+      {
+          "reservations": db.query(Reservation).all(),
+          "books": db.query(Book).all(),
+          "workshops": db.query(Workshop).all(),
+          "registrations": db.query(WorkshopRegistration).all(),
+          "activities": db.query(CulturalActivity).all(),
+      },
+  )
+
+
+@app.get("/admin/download-db")
+def download_database(admin_session: Optional[str] = Cookie(None)):
+  if admin_session != "authenticated":
+    return RedirectResponse(url="/admin/login", status_code=303)
+  db_path = "library.db"
+  if os.path.exists(db_path):
+    return FileResponse(
+        db_path, media_type="application/octet-stream", filename="library.db"
+    )
+  raise HTTPException(status_code=404, detail="ملف قاعدة البيانات غير موجود.")
+
+
+@app.get("/admin/logout")
+def admin_logout():
+  resp = RedirectResponse(url="/admin/login", status_code=303)
+  resp.delete_cookie(key="admin_session")
+  return resp
